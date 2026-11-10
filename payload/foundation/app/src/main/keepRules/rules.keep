@@ -1,0 +1,8 @@
+# R8 keep rules for :app. AGP picks up every file in src/main/keepRules automatically.
+#
+# Release builds currently run WITHOUT R8 (see `optimization { enable = false }` in app/build.gradle.kts, which
+# also lists the gradle.properties flag enabling needs).
+# Before enabling it, add rules here for anything reached by reflection that its library does not cover
+# with consumer rules, then verify a release build end to end (install it, exercise every screen).
+#
+# For details see https://d.android.com/r/tools/r8/keep-rules

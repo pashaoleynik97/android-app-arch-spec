@@ -1,0 +1,135 @@
+# The ONE place versions live. Module build files and convention plugins reference `libs.*` only.
+#
+# This is the last known-good toolchain set (see specs/toolchain.md). Bump deliberately and re-run the gates:
+# several entries are coupled (Kotlin ↔ KSP ↔ Compose compiler; AGP ↔ Hilt; lifecycle ↔ compileSdk).
+# Write the reason for any pin as a comment directly above the version.
+#
+# Layout: [versions] / [libraries] / [plugins] are each grouped by comment headers. Core entries come first;
+# every Recommended component adds its own block under a `# --- <component> ---` header at the end of each
+# section, so the file shows at a glance which component owns which dependency.
+
+[versions]
+# --- core toolchain ---
+# AGP 9 compiles Kotlin itself (built-in Kotlin): there is deliberately NO kotlin-android plugin alias below.
+agp = "9.2.1"
+kotlin = "2.2.10"
+# KSP's version is <kotlin>-<ksp>; it must match `kotlin` exactly.
+ksp = "2.2.10-2.0.2"
+# Hilt below 2.60 fails on AGP 9 ("BaseExtension not found").
+hilt = "2.60"
+# hiltViewModel() lives in hilt-lifecycle-viewmodel-compose since androidx.hilt 1.3.0.
+androidxHilt = "1.4.0"
+# Dagger's generated components reference @CanIgnoreReturnValue without exporting it (see the hilt convention).
+errorproneAnnotations = "2.41.0"
+
+# --- core androidx / kotlinx ---
+coreKtx = "1.10.1"
+activityCompose = "1.8.0"
+# lifecycle 2.11 requires compileSdk 37 — keep COMPILE_SDK in step when touching this.
+lifecycle = "2.11.0"
+navigationCompose = "2.9.8"
+composeBom = "2026.02.01"
+coroutines = "1.10.2"
+javaxInject = "1"
+
+# --- core testing ---
+junit = "4.13.2"
+androidxJunit = "1.1.5"
+espressoCore = "3.5.1"
+turbine = "1.2.0"
+
+# --- recommended components add their versions below this line ---
+# --- component: network (also used by auth-session, access-loss, connectivity) ---
+# Retrofit 2.11 ships its own kotlinx-serialization converter artifact (no third-party converter needed).
+retrofit = "2.11.0"
+# OkHttp 4.x keeps `okhttp3.mockwebserver` (the JUnit4-friendly MockWebServer API the tests use).
+okhttp = "4.12.0"
+kotlinxSerialization = "1.8.0"
+
+# --- component: media-store (androidx.startup also used by images) ---
+# Runs a component's process-start work from its own manifest, so the host's App class needs no edit.
+androidxStartup = "1.2.0"
+# --- component: images ---
+# Pinned to the Kotlin line: Coil releases after 3.3.0 pull a kotlin-stdlib whose metadata a Kotlin 2.2.x compiler
+# cannot read ("incompatible metadata version"). Bump only together with `kotlin` (toolchain.md BUILD-39).
+coil = "3.3.0"
+
+[libraries]
+# --- build-logic convention plugin classpath (compileOnly in build-logic/convention) ---
+android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-gradlePlugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }
+ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+hilt-gradlePlugin = { group = "com.google.dagger", name = "hilt-android-gradle-plugin", version.ref = "hilt" }
+
+# --- DI ---
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+hilt-lifecycle-viewmodel-compose = { group = "androidx.hilt", name = "hilt-lifecycle-viewmodel-compose", version.ref = "androidxHilt" }
+hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "androidxHilt" }
+javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
+errorprone-annotations = { group = "com.google.errorprone", name = "error_prone_annotations", version.ref = "errorproneAnnotations" }
+
+# --- coroutines ---
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+
+# --- androidx ---
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycle" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+
+# --- compose (versions from the BOM) ---
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation" }
+
+# --- testing ---
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+
+# --- recommended components add their libraries below this line ---
+# --- component: network (also used by auth-session, access-loss, connectivity) ---
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-kotlinx-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }
+okhttp-bom = { group = "com.squareup.okhttp3", name = "okhttp-bom", version.ref = "okhttp" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp" }
+okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+# --- component: media-store (androidx.startup also used by images) ---
+androidx-startup-runtime = { group = "androidx.startup", name = "startup-runtime", version.ref = "androidxStartup" }
+# --- component: images ---
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+# Not used by Core; declared (and `apply false` in the root build) so any module may apply it by alias.
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+
+# --- convention plugins (defined in build-logic; the included build supplies the version) ---
+{{CONVENTION_PREFIX}}-android-application = { id = "{{CONVENTION_PREFIX}}.android.application", version = "unspecified" }
+{{CONVENTION_PREFIX}}-android-application-compose = { id = "{{CONVENTION_PREFIX}}.android.application.compose", version = "unspecified" }
+{{CONVENTION_PREFIX}}-android-library = { id = "{{CONVENTION_PREFIX}}.android.library", version = "unspecified" }
+{{CONVENTION_PREFIX}}-android-library-compose = { id = "{{CONVENTION_PREFIX}}.android.library.compose", version = "unspecified" }
+{{CONVENTION_PREFIX}}-android-hilt = { id = "{{CONVENTION_PREFIX}}.android.hilt", version = "unspecified" }
+
+# --- recommended components add their plugins below this line ---

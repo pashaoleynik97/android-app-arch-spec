@@ -1,0 +1,13 @@
+{
+  "name": "android-arch",
+  "owner": {
+    "name": "mthkr"
+  },
+  "plugins": [
+    {
+      "name": "android-arch",
+      "source": "./",
+      "description": "Roll a multi-module Android architecture (build-logic, Hilt, Compose design system, test tooling, CI/CD, AI workflow) into a fresh Android Studio project."
+    }
+  ]
+}

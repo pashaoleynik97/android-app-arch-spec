@@ -1,0 +1,9 @@
+{
+  "name": "android-arch",
+  "version": "0.1.0",
+  "description": "Installer + doctor for android-app-arch-spec. The plain files (INSTALL.md, installer/, specs/, payload/) are the source of truth; these skills only point at them.",
+  "license": "MIT",
+  "author": {
+    "name": "mthkr"
+  }
+}

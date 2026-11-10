@@ -1,0 +1,182 @@
+name: Trigger Release
+
+# Pipeline 3 — manual. The checkboxes pick which semver segments to bump, applied in order with reset
+# semantics (major: X+1.0.0 · minor: x.Y+1.0 · patch: x.y.Z+1; none ticked = release the current version).
+# It then cuts `release/<version>` from the default branch, which runs the Release Build (pipeline 4).
+# Fails if that release branch already exists.
+#
+# Bot mode (repository variable `CI_BOT_PUSH` overrides the value rendered at install time):
+#   github-app  the bump is pushed to the default branch by the GitHub App, and the App's push of the
+#               release branch triggers the Release Build by itself.
+#   none        nothing is pushed to the default branch: the bump is committed on the release branch only,
+#               and — because a push made with the workflow token never starts another workflow — the
+#               Release Build is dispatched explicitly. The base version is the highest of
+#               version.properties and every existing release branch / v* tag, so releases still move
+#               forward. Keep version.properties current with an ordinary PR when convenient.
+on:
+  workflow_dispatch:
+    inputs:
+      major:
+        description: "Increment MAJOR (resets minor and patch)"
+        type: boolean
+        default: false
+      minor:
+        description: "Increment MINOR (resets patch)"
+        type: boolean
+        default: false
+      patch:
+        description: "Increment PATCH"
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-trigger
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # mode none: push the release branch with the workflow token
+  actions: write    # mode none: dispatch the Release Build
+
+env:
+  BOT_PUSH: ${{ vars.CI_BOT_PUSH || '{{CI_BOT_PUSH}}' }}
+  DEFAULT_BRANCH: "{{DEFAULT_BRANCH}}"
+
+jobs:
+  trigger:
+    name: Bump + cut release branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check bot mode
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+        run: |
+          case "$BOT_PUSH" in
+            github-app)
+              if [ -z "$APP_ID" ]; then
+                echo "::error::CI_BOT_PUSH=github-app but secret APP_ID is missing. Create the App (ci_runbook.md) or set the repository variable CI_BOT_PUSH=none."
+                exit 1
+              fi ;;
+            none)
+              echo "::notice::Bot mode 'none': the default branch is not touched; the Release Build is dispatched explicitly." ;;
+            *)
+              echo "::error::Unknown CI_BOT_PUSH '$BOT_PUSH' (expected github-app or none)."; exit 1 ;;
+          esac
+
+      - name: Mint GitHub App token
+        id: app-token
+        if: env.BOT_PUSH == 'github-app'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token || github.token }}
+          fetch-depth: 0
+          ref: ${{ env.DEFAULT_BRANCH }}
+
+      - name: Configure git identity
+        env:
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          name="${APP_SLUG:+$APP_SLUG[bot]}"
+          name="${name:-github-actions[bot]}"
+          git config user.name "$name"
+          git config user.email "$name@users.noreply.github.com"
+
+      - name: Compute target version
+        id: version
+        env:
+          IN_MAJOR: ${{ inputs.major }}
+          IN_MINOR: ${{ inputs.minor }}
+          IN_PATCH: ${{ inputs.patch }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$DEFAULT_BRANCH"
+          git switch -C "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+          file=$(grep '^VERSION_NAME=' version.properties | cut -d= -f2 | tr -d '[:space:]')
+          # Highest semver among version.properties, release/* branches and v* tags. In mode github-app
+          # this is always the file (every bump lands on the default branch); in mode none it keeps a
+          # release from reusing a number whose bump only ever lived on a release branch.
+          base=$( {
+              echo "$file"
+              git ls-remote --heads origin 'release/*' | sed 's#.*refs/heads/release/##'
+              git ls-remote --tags --refs origin 'v*' | sed 's#.*refs/tags/v##'
+            } | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -uV | tail -1 )
+          IFS='.' read -r MA MI PA <<< "$base"
+          changed=0
+          if [ "$IN_MAJOR" = "true" ]; then MA=$((MA + 1)); MI=0; PA=0; changed=1; fi
+          if [ "$IN_MINOR" = "true" ]; then MI=$((MI + 1)); PA=0; changed=1; fi
+          if [ "$IN_PATCH" = "true" ]; then PA=$((PA + 1)); changed=1; fi
+          new="$MA.$MI.$PA"
+          [ "$new" = "$file" ] || changed=1
+          echo "new=$new" >> "$GITHUB_OUTPUT"
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "major=$IN_MAJOR minor=$IN_MINOR patch=$IN_PATCH: file $file, base $base -> $new (changed=$changed)"
+
+      - name: Fail if the release branch already exists
+        env:
+          NEW: ${{ steps.version.outputs.new }}
+        run: |
+          set -euo pipefail
+          target="release/$NEW"
+          if git ls-remote --exit-code --heads origin "$target" >/dev/null 2>&1; then
+            echo "::error::Branch $target already exists — tick a box to move the version, or delete the branch."
+            exit 1
+          fi
+          echo "OK: $target is available."
+
+      # No retry here (unlike Publish): this is a manual run, and a moved branch is best answered by
+      # re-running it deliberately.
+      - name: Push version bump to the default branch
+        if: env.BOT_PUSH == 'github-app' && steps.version.outputs.changed == '1'
+        env:
+          NEW: ${{ steps.version.outputs.new }}
+        run: |
+          set -euo pipefail
+          echo "VERSION_NAME=$NEW" > version.properties
+          git add version.properties
+          git commit -m "chore(release): set version to $NEW [skip ci]"
+          if ! git push origin "$DEFAULT_BRANCH"; then
+            echo "::error::$DEFAULT_BRANCH advanced during the release trigger; re-run the workflow."
+            exit 1
+          fi
+          echo "Pushed version $NEW to $DEFAULT_BRANCH."
+
+      - name: Create release branch
+        env:
+          NEW: ${{ steps.version.outputs.new }}
+          CHANGED: ${{ steps.version.outputs.changed }}
+        run: |
+          set -euo pipefail
+          target="release/$NEW"
+          if [ "$BOT_PUSH" = "github-app" ]; then
+            git fetch origin "$DEFAULT_BRANCH"
+            git switch -C "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+          fi
+          git switch -c "$target"
+          if [ "$BOT_PUSH" != "github-app" ] && [ "$CHANGED" = "1" ]; then
+            # Mode none: the bump lives on the release branch only.
+            echo "VERSION_NAME=$NEW" > version.properties
+            git add version.properties
+            git commit -m "chore(release): release $NEW"
+          fi
+          # The tip of the default branch is usually a bot commit carrying `[skip ci]`. The same message on
+          # the release branch tip would make GitHub skip the Release Build for THIS push too, so reword
+          # it. Consequence: the release commit never exists on the default branch (pipeline 4 therefore
+          # passes an explicit --notes-start-tag).
+          if git log -1 --format=%B | grep -qiE '\[(skip ci|ci skip|no ci|skip actions|actions skip)\]'; then
+            git commit --amend -m "chore(release): release $NEW"
+          fi
+          git push origin "$target"
+          echo "Created and pushed $target."
+
+      # A push made with the workflow token never starts another workflow (workflow_dispatch is the
+      # documented exception), so mode none starts the Release Build itself.
+      - name: Dispatch the Release Build
+        if: env.BOT_PUSH != 'github-app'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEW: ${{ steps.version.outputs.new }}
+        run: gh workflow run release.yml --ref "release/$NEW"

@@ -1,0 +1,179 @@
+# Tokens check-refs.sh accepts without finding them in the repository.
+# One token per line, or an anchored regex starting with ^. Blank lines and # comments are ignored.
+# Add project names here only when they are genuinely external (a library type, a vocabulary word);
+# a moved file or a renamed class is fixed in the skill, not silenced here.
+
+# --- generic feature placeholders used in skills (`x` / `y` stand for any feature) ---
+^:[xy](-ui(-api)?)?(:[A-Za-z]+)?$
+^[XY][A-Z][A-Za-z0-9]*(\.kt)?$
+^Fake[XY][A-Z]?[A-Za-z0-9]*$
+^Recording[XY]?[A-Z]?[A-Za-z0-9]*$
+
+# --- Kotlin / coroutines / serialization ---
+Unit
+String
+Long
+Int
+Boolean
+Any
+Throwable
+Exception
+IOException
+CancellationException
+SerializationException
+Result
+Duration
+SimpleDateFormat
+BigDecimal
+UUID
+Flow
+StateFlow
+MutableStateFlow
+SharedFlow
+MutableSharedFlow
+Channel
+Deferred
+CompletableDeferred
+Job
+SupervisorJob
+CoroutineScope
+CoroutineDispatcher
+Dispatchers
+GlobalScope
+Json
+Serializable
+JvmInline
+Synchronized
+Volatile
+
+# --- Android / AndroidX ---
+Application
+Activity
+ComponentActivity
+Context
+Resources
+Uri
+Log
+BuildConfig
+SharedPreferences
+ProcessLifecycleOwner
+LifecycleOwner
+DefaultLifecycleObserver
+ViewModel
+SavedStateHandle
+NavHost
+NavController
+NavHostController
+NavBackStackEntry
+StrictMode
+DataStore
+Keystore
+R
+LibR
+SystemBarStyle
+ActivityResultContracts
+
+# --- Compose ---
+Composable
+ReadOnlyComposable
+Preview
+Immutable
+Stable
+Modifier
+Color
+ImageVector
+Text
+Row
+Box
+Column
+Scaffold
+LazyColumn
+MaterialTheme
+CompositionLocalProvider
+LaunchedEffect
+DisposableEffect
+AndroidView
+IntrinsicSize
+RoundedCornerShape
+
+# --- Hilt / Dagger / javax.inject ---
+Inject
+Singleton
+Module
+InstallIn
+SingletonComponent
+Binds
+Provides
+Qualifier
+Multibinds
+IntoSet
+HiltAndroidApp
+AndroidEntryPoint
+HiltViewModel
+
+# --- testing ---
+Test
+Before
+After
+Rule
+TestWatcher
+TestDispatcher
+StandardTestDispatcher
+UnconfinedTestDispatcher
+TestScope
+MockWebServer
+MockResponse
+VisibleForTesting
+
+# --- network (optional components; named in examples) ---
+Retrofit
+OkHttpClient
+Interceptor
+Authenticator
+
+# --- result / state vocabulary used in examples (not declared by the core code) ---
+Loading
+Content
+Failure
+Success
+SessionExpired
+Refused
+Unavailable
+Transient
+RetryLater
+StatusChanged
+Rejected
+Resynced
+ScopeLost
+Granted
+Denied
+PermanentlyDenied
+
+# --- files that are deliberately absent from a fresh clone ---
+keystore.properties
+local.properties
+
+# --- build tooling (Gradle / AGP API types named in the build references) ---
+CommonExtension
+ApplicationExtension
+LibraryExtension
+VersionCatalog
+Project
+
+# --- names that look like paths but are not repository files ---
+# GitHub Actions ids (owner/action) used in CI references
+^(actions|gradle/actions|github|softprops|android-actions)/[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)?(@.*)?$
+# git branch names and patterns
+^(release|feature|hotfix|bugfix)/
+# files written at run time into the gitignored evidence folder (device verification)
+^evidence/
+
+# --- Android framework / AndroidX / Coil types named by Recommended-component references ---
+PackageManager
+WhileSubscribed
+AsyncImage
+SingletonImageLoader
+SingletonImageLoader.Factory
+ImageLoader
+ImageLoader.Builder
+InitializationProvider

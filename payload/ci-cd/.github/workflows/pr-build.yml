@@ -1,0 +1,48 @@
+name: PR Build
+
+# Pipeline 1 — every pull request into the default branch: JVM unit tests (debug variant only — the
+# release variant runs the same tests a second time for no extra signal) plus a debug assemble, so a
+# manifest-merge or resource error fails here and not after the merge. Needs no secrets.
+on:
+  pull_request:
+    branches: ["{{DEFAULT_BRANCH}}"]
+
+# A new push to the same PR makes the running check obsolete.
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests + debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK {{JDK_CI}}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "{{JDK_CI}}"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests + debug build
+        run: ./gradlew testDebugUnitTest :app:assembleDebug --console=plain
+
+      # The skills and the code must not drift apart. These scripts ship with the ai-layer component; a
+      # project without them simply skips the step.
+      - name: Skills lint + reference check
+        run: |
+          set -euo pipefail
+          ran=0
+          if [ -f tools/skills/lint.sh ]; then bash tools/skills/lint.sh; ran=1; fi
+          if [ -f tools/skills/check-refs.sh ]; then bash tools/skills/check-refs.sh; ran=1; fi
+          if [ -f .arch-spec/spec/installer/gates/no-placeholders-left.sh ]; then
+            bash .arch-spec/spec/installer/gates/no-placeholders-left.sh .; ran=1
+          fi
+          [ "$ran" = 1 ] || echo "::notice::No skills tooling in this repository — skipped."

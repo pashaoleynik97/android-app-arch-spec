@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git log)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git branch --show-current)",
+      "Bash(git ls-files *)",
+      "Bash(git rev-parse *)",
+      "Bash(bash tools/skills/lint.sh)",
+      "Bash(bash tools/skills/lint.sh *)",
+      "Bash(bash tools/skills/check-refs.sh)",
+      "Bash(bash tools/skills/check-refs.sh *)",
+      "Bash(python3 -I tools/skills/skills_tool.py *)",
+      "Bash(python3 .arch-spec/spec/installer/render.py --target . status)",
+      "Bash(python3 .arch-spec/spec/installer/render.py --target . plan *)",
+      "Bash(python3 .arch-spec/spec/installer/render.py --target . --self-check)",
+      "Bash(bash .arch-spec/spec/installer/gates/no-placeholders-left.sh *)",
+      "Bash(bash .arch-spec/spec/installer/gates/test-summary.sh *)",
+      "Bash(adb devices)",
+      "Bash(adb devices *)",
+      "Bash(adb get-state)"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git push --force-with-lease *)",
+      "Read(./keystore.properties)",
+      "Read(**/keystore.properties)",
+      "Read(**/*.jks)",
+      "Read(**/*.keystore)"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Host-level session notices (component auth-session). Shown above the sign-in screen after a live session ended. -->
+<resources>
+    <string name="session_notice_expired">Your session has expired</string>
+    <string name="session_notice_inactivity">You were signed out after a period of inactivity</string>
+    <string name="session_notice_signed_in_elsewhere">You signed in on another device</string>
+    <string name="session_notice_access_changed">Your access has changed</string>
+    <string name="session_notice_ended">Your session has ended</string>
+    <string name="session_notice_sign_in_again">Sign in again to continue.</string>
+</resources>

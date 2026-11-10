@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug source-set manifest (component mitm-testing). Merged over the main manifest for debug builds only,
+  so release builds are untouched. Attaches the debug network security config, which trusts a locally
+  installed proxy CA (mitmproxy) for HTTPS interception. `tools:replace` keeps the merge working if the
+  main manifest ever declares its own config.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:replace="android:networkSecurityConfig" />
+
+</manifest>

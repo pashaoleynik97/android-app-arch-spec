@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The window theme only: everything inside the window is drawn by {{THEME_PREFIX}}Theme (Compose). A pure
+      framework parent keeps AppCompat / Material Components out of the app. With THEME_MODE=light-dark, switch
+      the parent to a DayNight one (e.g. android:Theme.DeviceDefault.DayNight on API 29+) so the window behind
+      the first frame matches the system mode.
+    -->
+    <style name="Theme.{{THEME_PREFIX}}" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

@@ -1,0 +1,4 @@
+# Verification evidence (screenshots, UI dumps, mitmproxy logs) written by tools/drive.sh.
+# It can contain screenshots of real data, so it is never committed.
+*
+!.gitignore

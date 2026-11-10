@@ -1,0 +1,141 @@
+name: Release Build
+
+# Pipeline 4 — a push to release/<version> (or a dispatch on that branch, which is how bot mode `none`
+# starts it): unit tests, then the release APK with NO `-test` suffix, uploaded as a run artifact and
+# attached to a GitHub Release `v<version>`. Re-pushing to the same branch (a hotfix) rebuilds and replaces
+# the asset. Signing secrets are optional: without them the APK is signed with the debug key and a
+# warning says so.
+on:
+  push:
+    branches:
+      - "release/**"
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BOT_PUSH: ${{ vars.CI_BOT_PUSH || '{{CI_BOT_PUSH}}' }}
+
+jobs:
+  release:
+    name: Test + build release APK
+    # A manual dispatch on any other branch would publish a release from the wrong code.
+    if: startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the GitHub Release + tag
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # mode none derives versionCode from the commit count
+
+      - name: Set up JDK {{JDK_CI}}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "{{JDK_CI}}"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest --console=plain
+
+      - name: Resolve version
+        id: ver
+        run: |
+          set -euo pipefail
+          version=$(grep '^VERSION_NAME=' version.properties | cut -d= -f2 | tr -d '[:space:]')
+          if [ "release/$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::warning::version.properties says $version but the branch is $GITHUB_REF_NAME."
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$BOT_PUSH" = "github-app" ]; then
+            echo "gradle_args=" >> "$GITHUB_OUTPUT"
+          else
+            echo "gradle_args=-PversionCodeOverride=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Same contract as in Publish: export the signing variables only when the secrets exist.
+      - name: Prepare release signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          SECRET_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SECRET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::No KEYSTORE_BASE64 secret — this release is signed with the DEBUG key. Do not ship it to users."
+            exit 0
+          fi
+          if [ -z "$SECRET_KEYSTORE_PASSWORD" ] || [ -z "$SECRET_KEY_ALIAS" ] || [ -z "$SECRET_KEY_PASSWORD" ]; then
+            echo "::error::KEYSTORE_BASE64 is set but KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD is missing."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          {
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks"
+            echo "KEYSTORE_PASSWORD=$SECRET_KEYSTORE_PASSWORD"
+            echo "KEY_ALIAS=$SECRET_KEY_ALIAS"
+            echo "KEY_PASSWORD=$SECRET_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      # -PreleaseBuild=true => versionName has NO `-test` suffix.
+      - name: Build release APK
+        run: ./gradlew :app:assembleRelease -PreleaseBuild=true ${{ steps.ver.outputs.gradle_args }} --console=plain
+
+      # A self-describing asset name instead of app-release.apk.
+      - name: Name the APK
+        id: apk
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          src=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          named="{{PROJECT_SLUG}}-$VERSION.apk"
+          cp "$src" "$named"
+          echo "path=$named" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release APK (run artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: {{PROJECT_SLUG}}-release-${{ steps.ver.outputs.version }}
+          if-no-files-found: error
+          path: ${{ steps.apk.outputs.path }}
+
+      # Idempotent: an existing release only gets its asset replaced (notes are not rewritten).
+      # Notes start at the previous release EXPLICITLY: release tags sit on reworded commits that never
+      # reach the default branch, so no earlier tag is an ancestor and GitHub's automatic pick would list
+      # every pull request ever merged. ls-remote works on any checkout depth; sort -V orders by semver,
+      # not lexically; no previous tag means GitHub's default range.
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          APK: ${{ steps.apk.outputs.path }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag exists — replacing the asset."
+            gh release upload "$tag" "$APK" --clobber
+            exit 0
+          fi
+          prev=$(git ls-remote --tags --refs origin 'v*' \
+            | sed 's#.*refs/tags/##' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | { cat; echo "$tag"; } \
+            | sort -uV \
+            | grep -B1 -x "$tag" \
+            | grep -vx "$tag" || true)
+          notes_args=(--generate-notes)
+          if [ -n "$prev" ]; then
+            echo "Release notes: $prev...$tag"
+            notes_args+=(--notes-start-tag "$prev")
+          else
+            echo "No previous release tag — GitHub's default notes range."
+          fi
+          gh release create "$tag" "$APK" --title "$tag" --target "$GITHUB_REF_NAME" "${notes_args[@]}"

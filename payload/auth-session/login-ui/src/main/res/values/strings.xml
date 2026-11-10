@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keys are prefixed with the feature package so modules never collide. -->
+<resources>
+    <string name="login_title">Sign in</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_submit">Sign in</string>
+    <string name="login_error_required">Required</string>
+    <string name="login_error_email">Enter a valid email address</string>
+    <string name="login_notice_invalid_credentials">Wrong email or password</string>
+    <string name="login_notice_account_disabled">This account cannot sign in. Contact your administrator.</string>
+    <string name="login_notice_refused">Could not sign in</string>
+    <string name="login_notice_unavailable">No connection to the server. Try again.</string>
+</resources>

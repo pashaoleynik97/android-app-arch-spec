@@ -1,0 +1,166 @@
+name: Publish ({{DEFAULT_BRANCH}})
+
+# Pipeline 2 — every merge into the default branch: unit tests, then (bot mode `github-app`) bump PATCH
+# and push it back, then build release + debug APKs whose versionName carries the `-test` suffix, and
+# upload them as a run artifact for QA.
+#
+# Bot mode (repository variable `CI_BOT_PUSH` overrides the value rendered at install time):
+#   github-app  the bump is committed by a GitHub App that sits on the branch ruleset's bypass list.
+#               Needs secrets APP_ID + APP_PRIVATE_KEY (see ci_runbook.md).
+#   none        no commit is ever pushed; versionName stays what version.properties says and versionCode
+#               is the commit count (`-PversionCodeOverride`). Needs no secrets at all.
+# Signing secrets are optional in both modes: without them the release APK is signed with the debug key.
+on:
+  push:
+    branches: ["{{DEFAULT_BRANCH}}"]
+
+# Serialize: two merges racing on the version counter must not both compute the same next PATCH.
+concurrency:
+  group: publish-{{DEFAULT_BRANCH}}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  BOT_PUSH: ${{ vars.CI_BOT_PUSH || '{{CI_BOT_PUSH}}' }}
+  DEFAULT_BRANCH: "{{DEFAULT_BRANCH}}"
+
+jobs:
+  publish:
+    name: Test, bump, build, publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check bot mode
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+        run: |
+          case "$BOT_PUSH" in
+            github-app)
+              if [ -z "$APP_ID" ]; then
+                echo "::error::CI_BOT_PUSH=github-app but secret APP_ID is missing. Create the App (ci_runbook.md) or set the repository variable CI_BOT_PUSH=none."
+                exit 1
+              fi
+              echo "Bot mode: github-app (PATCH is bumped and pushed)." ;;
+            none)
+              echo "::notice::Bot mode 'none': no version bump is pushed; versionCode = commit count." ;;
+            *)
+              echo "::error::Unknown CI_BOT_PUSH '$BOT_PUSH' (expected github-app or none)."; exit 1 ;;
+          esac
+
+      - name: Mint GitHub App token
+        id: app-token
+        if: env.BOT_PUSH == 'github-app'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      # The App token must be the checkout credential: `git push` reuses it, and only the App is allowed to
+      # bypass the ruleset. Full history: the bump re-bases on the latest branch tip, and mode `none`
+      # counts commits.
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token || github.token }}
+          fetch-depth: 0
+
+      - name: Set up JDK {{JDK_CI}}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "{{JDK_CI}}"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest --console=plain
+
+      # Bump PATCH against the LATEST branch tip and push, retrying when another merge landed meanwhile.
+      # Recomputing from origin each attempt keeps versionCode monotonic and makes version.properties
+      # merge conflicts impossible. `[skip ci]` keeps the bump commit from re-triggering this workflow.
+      # It runs before the build so the APK carries the new version (a failed build then "spends" a
+      # version number; that is accepted).
+      - name: Bump version and push
+        if: env.BOT_PUSH == 'github-app'
+        env:
+          BOT_NAME: ${{ steps.app-token.outputs.app-slug }}[bot]
+        run: |
+          set -euo pipefail
+          git config user.name "$BOT_NAME"
+          git config user.email "$BOT_NAME@users.noreply.github.com"
+          pushed=0
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "$DEFAULT_BRANCH"
+            git switch -C "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+            base=$(grep '^VERSION_NAME=' version.properties | cut -d= -f2 | tr -d '[:space:]')
+            IFS='.' read -r MA MI PA <<< "$base"
+            new="$MA.$MI.$((PA + 1))"
+            echo "VERSION_NAME=$new" > version.properties
+            git add version.properties
+            git commit -m "chore(release): bump version to $new [skip ci]"
+            if git push origin "$DEFAULT_BRANCH"; then
+              echo "Bumped $base -> $new"
+              pushed=1
+              break
+            fi
+            echo "Push rejected (attempt $attempt): the branch moved, retrying..."
+            sleep 3
+          done
+          [ "$pushed" = 1 ] || { echo "::error::Failed to push the version bump after 5 attempts."; exit 1; }
+
+      - name: Resolve version
+        id: version
+        run: |
+          set -euo pipefail
+          version=$(grep '^VERSION_NAME=' version.properties | cut -d= -f2 | tr -d '[:space:]')
+          if [ "$BOT_PUSH" = "github-app" ]; then
+            echo "gradle_args=" >> "$GITHUB_OUTPUT"
+            echo "label=$version" >> "$GITHUB_OUTPUT"
+          else
+            code=$(git rev-list --count HEAD)
+            echo "gradle_args=-PversionCodeOverride=$code" >> "$GITHUB_OUTPUT"
+            echo "label=$version-build$code" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # Exports KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD only when the secrets exist.
+      # An empty-but-set variable would look like "signing configured" to Gradle and break the build, so
+      # nothing is exported at all without them. The keystore is decoded outside the workspace.
+      - name: Prepare release signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          SECRET_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SECRET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::notice::No KEYSTORE_BASE64 secret — the release APK is signed with the debug key."
+            exit 0
+          fi
+          if [ -z "$SECRET_KEYSTORE_PASSWORD" ] || [ -z "$SECRET_KEY_ALIAS" ] || [ -z "$SECRET_KEY_PASSWORD" ]; then
+            echo "::error::KEYSTORE_BASE64 is set but KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD is missing."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          {
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks"
+            echo "KEYSTORE_PASSWORD=$SECRET_KEYSTORE_PASSWORD"
+            echo "KEY_ALIAS=$SECRET_KEY_ALIAS"
+            echo "KEY_PASSWORD=$SECRET_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      # No -PreleaseBuild => versionName gets the `-test` suffix.
+      - name: Build release + debug APKs
+        run: ./gradlew :app:assembleRelease :app:assembleDebug ${{ steps.version.outputs.gradle_args }} --console=plain
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: {{PROJECT_SLUG}}-${{ steps.version.outputs.label }}-test
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/debug/*.apk

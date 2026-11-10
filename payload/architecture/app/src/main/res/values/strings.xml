@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Base language ({{BASE_LOCALE}}). Translations go in values-<locale>/strings.xml with the same keys. -->
+<resources>
+    <string name="app_name">{{APP_NAME}}</string>
+    <string name="app_menu">Menu</string>
+</resources>

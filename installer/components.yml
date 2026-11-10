@@ -1,0 +1,502 @@
+# Component manifest — the single source of truth for what can be installed.
+# Read by INSTALL.md (the agent) and installer/render.py (the renderer).
+#
+# Fields
+#   tier          core | recommended
+#   depends_on    components that must be installed first (the installer offers to add them)
+#   payload       directory under payload/ whose tree mirrors the target project root
+#   replaces      stock files of an empty Android Studio project this component may overwrite on a FRESH install
+#   removes       stock files this component deletes on a fresh install (globs, rendered)
+#   settings_includes  Gradle modules to add to settings.gradle.kts (inside the arch-spec marker block)
+#   app_dependencies   `:app` dependency lines to add (inside the arch-spec marker block of app/build.gradle.kts)
+#   parameters    parameters this component's payload uses (for the questionnaire)
+#   gate          commands that must succeed after installing (run from the target root)
+#   skill_refs    reference files this component contributes to the installed skills (shipped inside its own payload
+#                 under .claude/skills/<skill>/references/; listed here for doctor/lint)
+#   inserts       extra marker-block edits: [{file, marker, lines}] — lines are unique-merged between
+#                 `<arch-spec:MARKER>` / `</arch-spec:MARKER>` comment lines (// , # or <!-- -->) in `file`.
+#                 Inserts of ALL installed components are re-applied after every install, so a component installed
+#                 before ai-layer still gets its skill-index / CLAUDE.md lines once ai-layer arrives.
+#                 Standard markers: settings.gradle.kts `includes`, app/build.gradle.kts `app-dependencies`,
+#                 App.kt `feature-registrations`, CLAUDE.md `modules` + `components`,
+#                 .claude/skills/<skill>/SKILL.md `references`.
+#   doc           the per-component install procedure
+
+schema: 1
+
+components:
+
+  foundation:
+    tier: core
+    depends_on: []
+    payload: foundation
+    replaces:
+      - settings.gradle.kts
+      - build.gradle.kts
+      - gradle.properties
+      - gradle/libs.versions.toml
+      - app/build.gradle.kts
+      - .gitignore
+      - gradle/gradle-daemon-jvm.properties
+      - gradle/wrapper/gradle-wrapper.properties
+    removes:
+      - app/proguard-rules.pro
+    settings_includes: []
+    app_dependencies: []
+    parameters: [PROJECT_SLUG, APPLICATION_ID, APP_PACKAGE, ROOT_PACKAGE, CONVENTION_PREFIX, MIN_SDK, TARGET_SDK, COMPILE_SDK, JVM_TARGET, KEYSTORE_FILE]
+    gate:
+      - ./gradlew help
+      - ./gradlew :app:assembleDebug
+    skill_refs: [application-architecture/references/build-system.md, application-architecture/references/toolchain.md]
+    inserts:
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [build-system.md](references/build-system.md) — build-logic convention plugins, catalog, root files, test defaults, versioning, signing, R8 (component: foundation)"
+          - "- [toolchain.md](references/toolchain.md) — coupled version groups, safe upgrade order, version-conditional gotchas, diagnosing a red build (component: foundation)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **foundation** — root Gradle files, version catalog, `build-logic` convention plugins (`{{CONVENTION_PREFIX}}.android.*`), versioning and signing in `app/build.gradle.kts`."
+    doc: installer/components/foundation.md
+
+  architecture:
+    tier: core
+    depends_on: [foundation]
+    payload: architecture
+    replaces:
+      - app/src/main/AndroidManifest.xml
+      - app/src/main/java/{{APP_PACKAGE_PATH}}/MainActivity.kt
+      - app/src/main/res/values/strings.xml
+      - app/src/main/res/values/themes.xml
+      - app/src/main/res/xml/backup_rules.xml          # stock samples → versions with backup-exclusion marker blocks
+      - app/src/main/res/xml/data_extraction_rules.xml
+    removes:
+      - app/src/main/java/{{STOCK_APP_PACKAGE_PATH}}/MainActivity.kt
+      - app/src/main/res/values/colors.xml              # stock purple/teal; colours come from the theme tokens (DS-03)
+      - app/src/main/java/{{STOCK_APP_PACKAGE_PATH}}/ui/theme/*.kt
+      - app/src/test/java/{{STOCK_APP_PACKAGE_PATH}}/ExampleUnitTest.kt
+      - app/src/androidTest/java/{{STOCK_APP_PACKAGE_PATH}}/ExampleInstrumentedTest.kt
+    settings_includes: [":lib-common", ":lib-android", ":feature-api", ":core-testing"]
+    app_dependencies: ['implementation(project(":lib-common"))', 'implementation(project(":lib-android"))', 'implementation(project(":feature-api"))']
+    parameters: [APP_NAME, ROOT_PACKAGE, APP_PACKAGE, THEME_PREFIX, BASE_LOCALE, EXTRA_LOCALES, COLOR_PRIMARY, COLOR_ERROR, COLOR_SUCCESS, COLOR_WARNING, FONT_FAMILY, REFERENCE_DEVICE_DP, THEME_MODE, FIGMA_URL]
+    gate:
+      - ./gradlew assembleDebug
+      - ./gradlew testDebugUnitTest
+    skill_refs: [application-architecture/references/modules.md, application-architecture/references/kernel.md, application-architecture/references/presentation.md, application-architecture/references/di.md, application-architecture/references/feature-trio.md, application-architecture/references/testing.md, compose-ui/references/tokens.md, compose-ui/references/uikit.md, compose-ui/references/host-chrome.md, compose-ui/references/screen-layout.md, application-architecture/references/data-and-errors.md]
+    inserts:
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [modules.md](references/modules.md) — module graph, kernel modules, infra modules, the host and its extension seams, naming (component: architecture)"
+          - "- [feature-trio.md](references/feature-trio.md) — contract / UI / domain modules, package layout, registration, seams between siblings (component: architecture)"
+          - "- [di.md](references/di.md) — Hilt entry points, module placement and shape, qualifiers, scopes, multibindings, eager singletons (component: architecture)"
+          - "- [kernel.md](references/kernel.md) — Reporter, Scopes, AppForegroundWatch, dispatcher and clock seams, stores (component: architecture)"
+          - "- [presentation.md](references/presentation.md) — ViewModel contract, lifecycle-gated work, notices, routes and results, permissions (component: architecture)"
+          - "- [data-and-errors.md](references/data-and-errors.md) — domain shape, sealed results and rungs, DTOs, validators, caches, writes (component: architecture)"
+          - "- [testing.md](references/testing.md) — the JVM kit, core-testing, fakes, what to test per layer, naming (component: architecture)"
+      - file: .claude/skills/compose-ui/SKILL.md
+        marker: references
+        lines:
+          - "- [tokens.md](references/tokens.md) — colors, typography, dimens, theme mode, adding tokens, when the design arrives (component: architecture)"
+          - "- [uikit.md](references/uikit.md) — kit inventory, button and row, text field, banner data, sheets, dialogs, icons (component: architecture)"
+          - "- [host-chrome.md](references/host-chrome.md) — app bar, banners, app menu via Set… effects, banner layering, insets (component: architecture)"
+          - "- [screen-layout.md](references/screen-layout.md) — anatomy of a screen, structure, previews, branded surfaces, system bars (component: architecture)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **architecture** — kernel modules, the host (`:app`), design system and UI kit, `:core-testing`, the reference feature `home`; new features via the **add-feature** skill."
+      - file: CLAUDE.md
+        marker: modules
+        lines:
+          - "- `:app` `{{APP_PACKAGE}}` — host: App (feature registration), MainActivity, AppNavHost (single NavHost + host chrome)"
+          - "- `:lib-common` `{{ROOT_PACKAGE}}.libcommon` — kernel: Reporter + logTag, Scopes, AppForegroundWatch, DispatcherProvider, TimeSource (no Compose, no UI)"
+          - "- `:feature-api` `{{ROOT_PACKAGE}}.featureapi` — FeatureApi contract + FeaturesHolder registry"
+          - "- `:lib-android` `{{ROOT_PACKAGE}}.libandroid` — {{THEME_PREFIX}}Theme tokens, host chrome (AppStatusBar, TopSnackbar, app menu), base UI kit, BaseViewModel, nav helpers"
+          - "- `:core-testing` `{{ROOT_PACKAGE}}.coretesting` — MainDispatcherRule, TestDispatcherProvider, FakeTimeSource, RecordingReporter (testImplementation only)"
+          - "- `:<feature>-ui-api` / `:<feature>-ui` / `:<feature>` `{{ROOT_PACKAGE}}.<feature>.ui.api` / `.ui` / `.domain` — one trio per feature (`home` is the start destination)"
+    doc: installer/components/architecture.md
+
+  ai-layer:
+    tier: core
+    depends_on: [foundation]
+    payload: ai-layer
+    replaces: []
+    removes: []
+    settings_includes: []
+    app_dependencies: []
+    parameters: [APP_NAME, PROJECT_SLUG, ROOT_PACKAGE, CONVENTION_PREFIX, THEME_PREFIX]
+    gate:
+      - bash tools/skills/lint.sh
+      - bash tools/skills/check-refs.sh
+    skill_refs: [skills-maintenance/references/amend.md, skills-maintenance/references/capture.md, skills-maintenance/references/audit.md, skills-maintenance/references/hygiene.md, skills-maintenance/references/new-skill.md, skills-maintenance/references/upgrade.md, skills-maintenance/references/rename-module.md]
+    inserts:
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **ai-layer** — this file, the skills in `.claude/skills/`, path-scoped rules in `.claude/rules/`, the task workflow in `.claude/workflow/`, skill tooling in `tools/skills/`."
+    doc: installer/components/ai-layer.md
+
+  docs:
+    tier: core
+    depends_on: [foundation]
+    payload: docs
+    replaces: []                # a README the user already has is never overwritten → .arch-spec-new
+    removes: []
+    settings_includes: []
+    app_dependencies: []
+    parameters: [APP_NAME, PROJECT_SLUG]
+    gate: []
+    skill_refs: []
+    inserts:
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **docs** — `README.md`, layered behaviour docs in `.docs/` (PO / QA / developer parts), decision records in `.docs/decisions/`."
+    doc: installer/components/docs.md
+
+  # ---------------------------------------------------------------- recommended
+
+  ci-cd:
+    tier: recommended
+    depends_on: [foundation]
+    payload: ci-cd
+    replaces: []
+    removes: []
+    settings_includes: []
+    app_dependencies: []
+    parameters: [DEFAULT_BRANCH, KEYSTORE_FILE, CI_BOT_PUSH, JDK_CI, PROJECT_SLUG, APP_NAME, APPLICATION_ID]
+    gate:
+      - bash .arch-spec/spec/installer/gates/workflows-check.sh .
+      - ./gradlew :app:assembleDebug -PreleaseBuild=true -PversionCodeOverride=1
+    skill_refs: [application-architecture/references/ci-cd.md]
+    inserts:
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [ci-cd.md](references/ci-cd.md) — GitHub Actions pipelines, version movement, CI signing, bot mode, release notes (component: ci-cd)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **ci-cd** — four GitHub Actions workflows (PR gate, publish on merge, release trigger, release build); setup in `ci_runbook.md`, QA guide in `docs/qa-installing-builds.md`. Skill ref: `application-architecture/references/ci-cd.md`."
+    doc: installer/components/ci-cd.md
+
+  mitm-testing:
+    tier: recommended
+    depends_on: [architecture]
+    payload: mitm-testing
+    replaces: []
+    removes: []
+    settings_includes: []
+    app_dependencies: []
+    parameters: [BASE_URL_DEBUG, HEALTH_PATH, APPLICATION_ID]
+    gate:
+      - python3 -I .mitm_scripts/_harness/fake_backend.py --selftest
+      - ./gradlew :app:assembleDebug
+    skill_refs: [mitmproxy-testing/SKILL.md, feature-verification/SKILL.md, feature-verification/references/results-table.md]
+    inserts:
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **mitm-testing** — `.mitm_scripts/` scenario library + `_harness/fake_backend.py` (strict fake backend, `--selftest`), `tools/drive.sh`, debug-only user-CA trust. Skills: `mitmproxy-testing` (optional), `feature-verification` (ON-DEMAND ONLY — only when explicitly asked to verify on a device)."
+    doc: installer/components/mitm-testing.md
+
+  network:
+    tier: recommended
+    depends_on: [architecture]
+    payload: network
+    replaces: []
+    removes: []
+    settings_includes: [":network"]
+    app_dependencies: ['implementation(project(":network")) // business HTTP stack: NetworkConfig, @ApiRetrofit, shared Json']
+    parameters: [BASE_URL_DEBUG, BASE_URL_RELEASE]
+    gate:
+      - ./gradlew assembleDebug
+      - ./gradlew :network:testDebugUnitTest
+    skill_refs: [application-architecture/references/network.md]
+    inserts:
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [network.md](references/network.md) — business HTTP client + seams (ApiInterceptor set, authenticator set), envelope + error helpers, classifyCall, RefreshPolicy tag, HTTP logging (component: network)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **network** — `:network`: the business OkHttp/Retrofit stack (`@ApiClient`, `@ApiRetrofit`), the one `Json`, example envelope + `parseApiError`, `classifyCall`, debug HTTP logging; base URL per build type in `network/build.gradle.kts`. Skill ref: `application-architecture/references/network.md`."
+      - file: CLAUDE.md
+        marker: modules
+        lines:
+          - "- `:network` `{{ROOT_PACKAGE}}.network` — business HTTP stack and its DI seams; no session knowledge"
+    doc: installer/components/network.md
+
+  auth-session:
+    tier: recommended
+    depends_on: [network]
+    payload: auth-session
+    # Session files are excluded from Auto Backup through architecture's backup marker blocks (inserts below).
+    replaces: []
+    removes: []
+    settings_includes: [":auth", ":login-ui-api", ":login-ui", ":login"]
+    app_dependencies:
+      - 'implementation(project(":auth")) // session: AuthManager, SessionShell for the session host extension'
+      - 'implementation(project(":login-ui-api")) // sign-in route the session host extension navigates to'
+      - 'implementation(project(":login-ui")) // LoginFeatureImpl, registered in App'
+    parameters: []
+    gate:
+      - ./gradlew assembleDebug
+      - ./gradlew :auth:testDebugUnitTest :login:testDebugUnitTest :login-ui:testDebugUnitTest
+    skill_refs: [application-architecture/references/auth-session.md]
+    inserts:
+      - file: app/src/main/java/{{APP_PACKAGE_PATH}}/App.kt
+        marker: feature-registrations
+        lines:
+          - "{{ROOT_PACKAGE}}.login.ui.LoginFeatureImpl().addToRegistry()"
+      - file: app/src/main/res/xml/backup_rules.xml
+        marker: backup-exclusions
+        lines:
+          - '<exclude domain="sharedpref" path="auth_secure_prefs.xml" />'
+          - '<exclude domain="sharedpref" path="auth_profile_prefs.xml" />'
+      - file: app/src/main/res/xml/data_extraction_rules.xml
+        marker: backup-exclusions-cloud
+        lines:
+          - '<exclude domain="sharedpref" path="auth_secure_prefs.xml" />'
+          - '<exclude domain="sharedpref" path="auth_profile_prefs.xml" />'
+      - file: app/src/main/res/xml/data_extraction_rules.xml
+        marker: backup-exclusions-transfer
+        lines:
+          - '<exclude domain="sharedpref" path="auth_secure_prefs.xml" />'
+          - '<exclude domain="sharedpref" path="auth_profile_prefs.xml" />'
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [auth-session.md](references/auth-session.md) — AuthManager, single-flight refresh + zombie guard, keep-alive, token storage, session host extension, sign-in feature (component: auth-session)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **auth-session** — `:auth` (session, single-flight refresh, Keystore token store, keep-alive) + a minimal sign-in trio (`login-ui-api` / `login-ui` / `login`); the session host extension (package `session` of `:app`) navigates on session end. Skill ref: `application-architecture/references/auth-session.md`."
+      - file: CLAUDE.md
+        marker: modules
+        lines:
+          - "- `:auth` `{{ROOT_PACKAGE}}.auth` — session infrastructure (no UI); plugs bearer + authenticator into `:network`"
+          - "- `:login-ui-api` / `:login-ui` / `:login` `{{ROOT_PACKAGE}}.login.ui.api` / `.ui` / `.domain` — sign-in feature"
+    doc: installer/components/auth-session.md
+
+  access-loss:
+    tier: recommended
+    depends_on: [auth-session]
+    payload: access-loss
+    replaces: []
+    removes: []
+    settings_includes: []
+    app_dependencies: []
+    parameters: []
+    gate:
+      - ./gradlew assembleDebug
+      - ./gradlew :network:testDebugUnitTest :auth:testDebugUnitTest
+    skill_refs: [application-architecture/references/access-loss.md]
+    inserts:
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [access-loss.md](references/access-loss.md) — 403 chain of responsibility: AccessLossBus, interceptor, feature filters, host fallback, recovery budget (component: access-loss)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **access-loss** — every 403 on the business client is reported to `AccessLossBus` (`{{ROOT_PACKAGE}}.network.access`); features filter their expected 403s, the host fallback (`AccessLossFallback`, rendered by the `access` package of `:app`) shows a notice or ends the session. Skill ref: `application-architecture/references/access-loss.md`."
+    doc: installer/components/access-loss.md
+
+  connectivity:
+    tier: recommended
+    depends_on: [architecture]
+    payload: connectivity
+    replaces: []
+    removes: []
+    settings_includes: [":connectivity"]
+    app_dependencies: ['implementation(project(":connectivity")) // NetworkStateWatch for the connectivity banner host extension']
+    parameters: [BASE_URL_DEBUG, BASE_URL_RELEASE, HEALTH_PATH]
+    gate:
+      - ./gradlew assembleDebug
+      - ./gradlew :connectivity:testDebugUnitTest
+    skill_refs: [application-architecture/references/connectivity.md]
+    inserts:
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [connectivity.md](references/connectivity.md) — NetworkStateWatch (link + health probe), flush semantics, offline / restored banner (component: connectivity)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **connectivity** — `:connectivity`: `NetworkStateWatch` (OS link + a health probe on its own client), offline / restored banner via the host extension in the `connectivity` package of `:app`. Skill ref: `application-architecture/references/connectivity.md`."
+      - file: CLAUDE.md
+        marker: modules
+        lines:
+          - "- `:connectivity` `{{ROOT_PACKAGE}}.connectivity` — network-state watch (no UI); own OkHttp client for the health probe"
+    doc: installer/components/connectivity.md
+
+  paging:
+    tier: recommended
+    depends_on: [architecture]
+    payload: paging
+    # New files only, inside the Core modules :lib-common (Pager) and :lib-android (scroll trigger, footer items).
+    replaces: []
+    removes: []
+    settings_includes: []
+    app_dependencies: []
+    parameters: []
+    gate:
+      - ./gradlew assembleDebug
+      - ./gradlew :lib-common:testDebugUnitTest
+    skill_refs: [application-architecture/references/paging.md, compose-ui/references/paging-ui.md]
+    inserts:
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [paging.md](references/paging.md) — Pager<K, T, F>: single-flight, generation guard, append retry, de-dup, PagingConfig per screen, VM wiring + tests (component: paging)"
+      - file: .claude/skills/compose-ui/SKILL.md
+        marker: references
+        lines:
+          - "- [paging-ui.md](references/paging-ui.md) — PagingScrollTrigger, pagingFooter / loading + retry footer items, refresh vs append failure on screen (component: paging)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **paging** — `Pager<K, T, F>` in `:lib-common` (`{{ROOT_PACKAGE}}.libcommon.paging`) + `PagingScrollTrigger` / `pagingFooter` in `:lib-android`; recipe `.arch-spec/spec/specs/patterns/paginated-picker.md`. Skill refs: `application-architecture/references/paging.md`, `compose-ui/references/paging-ui.md`."
+    doc: installer/components/paging.md
+
+  images:
+    tier: recommended
+    depends_on: [network]
+    payload: images
+    replaces: []
+    removes: []
+    settings_includes: [":files", ":images"]
+    app_dependencies:
+      - 'implementation(project(":files")) // FilesConfig, provided by the host from NetworkConfig'
+      - 'implementation(project(":images")) // Coil singleton ImageLoader over the authenticated files client'
+    parameters: []
+    gate:
+      - ./gradlew assembleDebug
+      - ./gradlew :files:testDebugUnitTest :images:testDebugUnitTest
+    skill_refs: [application-architecture/references/images.md, compose-ui/references/images-ui.md]
+    inserts:
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [images.md](references/images.md) — :files (FilesConfig, FileUrlResolver, @FilesClient + pluggable FilesAuthorizer), :images (Coil singleton via androidx.startup), Coil version pin (component: images)"
+      - file: .claude/skills/compose-ui/SKILL.md
+        marker: references
+        lines:
+          - "- [images-ui.md](references/images-ui.md) — {{THEME_PREFIX}}RemoteImage, {{THEME_PREFIX}}Avatar (initials fallback), plain AsyncImage uses the authenticated loader (component: images)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **images** — `:files` (file URLs + authenticated `@FilesClient`; bearer token automatically when `auth-session` is installed) and `:images` (Coil singleton loader, `{{THEME_PREFIX}}RemoteImage`, `{{THEME_PREFIX}}Avatar`); host config in `app/…/di/FilesConfigModule.kt`. Coil is pinned to the Kotlin line. Skill refs: `application-architecture/references/images.md`, `compose-ui/references/images-ui.md`."
+      - file: CLAUDE.md
+        marker: modules
+        lines:
+          - "- `:files` `{{ROOT_PACKAGE}}.files` — server-file URLs + authenticated files OkHttp client (no UI)"
+          - "- `:images` `{{ROOT_PACKAGE}}.images` — Coil image loading and the remote-image / avatar composables"
+    doc: installer/components/images.md
+
+  media-store:
+    tier: recommended
+    depends_on: [architecture]
+    payload: media-store
+    replaces: []
+    removes: []
+    settings_includes: [":media"]
+    app_dependencies: ['implementation(project(":media")) // LocalMediaStore; the host provides MediaStoreConfig (app/di/MediaConfigModule.kt)']
+    parameters: []
+    gate:
+      - ./gradlew assembleDebug
+      - ./gradlew :media:testDebugUnitTest
+    skill_refs: [application-architecture/references/media-store.md]
+    inserts:
+      - file: app/src/main/res/xml/backup_rules.xml
+        marker: backup-exclusions
+        lines:
+          - '<exclude domain="file" path="media/" />'
+      - file: app/src/main/res/xml/data_extraction_rules.xml
+        marker: backup-exclusions-cloud
+        lines:
+          - '<exclude domain="file" path="media/" />'
+      - file: app/src/main/res/xml/data_extraction_rules.xml
+        marker: backup-exclusions-transfer
+        lines:
+          - '<exclude domain="file" path="media/" />'
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [media-store.md](references/media-store.md) — app-internal scratch store for captured media: pending/kept areas, publish-keep-discard by id, TTL sweep at process start (component: media-store)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **media-store** — `:media`: `LocalMediaStore` (captures under `filesDir`, folder `media`, kept by server id, wall-clock TTL sweep at process start via androidx.startup), `MediaDeletionScheduler`; TTL in `app/…/di/MediaConfigModule.kt`. Skill ref: `application-architecture/references/media-store.md`."
+      - file: CLAUDE.md
+        marker: modules
+        lines:
+          - "- `:media` `{{ROOT_PACKAGE}}.media` — device-local scratch media store with TTL sweep (no UI, no network)"
+    doc: installer/components/media-store.md
+
+  hardware-input:
+    tier: recommended
+    depends_on: [architecture]
+    payload: hardware-input
+    replaces: []
+    removes: []
+    settings_includes: [":input-api", ":input", ":input-debug"]
+    app_dependencies:
+      - 'implementation(project(":input")) // InputController, registered on MainActivity via the HostActivityObserver set'
+      - 'debugImplementation(project(":input-debug")) // adb-broadcast input driver; must never ship in release'
+    parameters: [APPLICATION_ID]
+    gate:
+      - ./gradlew assembleDebug assembleRelease
+      - ./gradlew :input-api:testDebugUnitTest :input:testDebugUnitTest :input-debug:testDebugUnitTest
+    skill_refs: [application-architecture/references/hardware-input.md]
+    inserts:
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [hardware-input.md](references/hardware-input.md) — pluggable vendor input drivers: contract, resolver (Auto/Forced/Disabled), Activity-lifecycle controller, CollectInputWhileResumed, adb debug driver, adding a vendor (component: hardware-input)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **hardware-input** — `:input-api` (driver contract) + `:input` (`InputController`, resolver, settings, `CollectInputWhileResumed`) + `:input-debug` (adb broadcast driver, debug builds only: `adb shell am broadcast -a {{APPLICATION_ID}}.input.DEBUG_EVENT --es data <value> --es kind <kind>`). Vendor drivers are one module each (`input-api/README.md`). Skill ref: `application-architecture/references/hardware-input.md`."
+      - file: CLAUDE.md
+        marker: modules
+        lines:
+          - "- `:input-api` / `:input` / `:input-debug` `{{ROOT_PACKAGE}}.input.api` / `.input` / `.input.debug` — hardware-input contract / controller / adb debug driver (debugImplementation)"
+    doc: installer/components/hardware-input.md
+
+  engineering-menu:
+    tier: recommended
+    depends_on: [architecture]
+    payload: engineering-menu
+    replaces: []
+    removes: []
+    settings_includes: [":engineering-ui-api", ":engineering-ui"]
+    app_dependencies:
+      - 'implementation(project(":engineering-ui")) // EngineeringFeatureImpl, registered in App'
+      - 'implementation(project(":engineering-ui-api")) // EngineeringRoutes.MENU, passed to the screen that hosts the hidden entry'
+    parameters: []
+    gate:
+      - ./gradlew assembleDebug
+      - ./gradlew :engineering-ui-api:testDebugUnitTest :engineering-ui:testDebugUnitTest
+    skill_refs: [application-architecture/references/engineering-menu.md]
+    inserts:
+      - file: app/src/main/java/{{APP_PACKAGE_PATH}}/App.kt
+        marker: feature-registrations
+        lines:
+          - "{{ROOT_PACKAGE}}.engineering.ui.EngineeringFeatureImpl().addToRegistry()"
+      - file: .claude/skills/application-architecture/SKILL.md
+        marker: references
+        lines:
+          - "- [engineering-menu.md](references/engineering-menu.md) — hidden diagnostics menu: EngineeringSection multibinding, row/control model, search, wiring an entry, contributing a section (component: engineering-menu)"
+      - file: CLAUDE.md
+        marker: components
+        lines:
+          - "- **engineering-menu** — hidden diagnostics menu (`:engineering-ui-api` / `:engineering-ui`, route `EngineeringRoutes.MENU`); modules contribute rows as `@IntoSet EngineeringSection`; no entry until a screen offers one (hidden gesture / debug app-menu option). Skill ref: `application-architecture/references/engineering-menu.md`."
+      - file: CLAUDE.md
+        marker: modules
+        lines:
+          - "- `:engineering-ui-api` / `:engineering-ui` `{{ROOT_PACKAGE}}.engineering.ui.api` / `.ui` — hidden diagnostics menu (no domain module)"
+    doc: installer/components/engineering-menu.md

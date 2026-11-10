@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Engineer-facing and deliberately English-only: no translations are expected for this module. -->
+<resources>
+    <string name="engineering_menu_title">Engineering</string>
+    <string name="engineering_menu_search_placeholder">Search settings and info</string>
+    <string name="engineering_menu_search_clear">Clear search</string>
+    <string name="engineering_menu_no_results">Nothing matches \"%1$s\".</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Host-level connectivity banners (component connectivity). -->
+<resources>
+    <string name="connectivity_offline_title">No connection to the server</string>
+    <string name="connectivity_offline_message">Changes you make may not be saved until the connection is back.</string>
+    <string name="connectivity_restored_title">Connection restored</string>
+</resources>

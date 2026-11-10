@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Host-level access notices (component access-loss). -->
+<resources>
+    <string name="access_notice_forbidden">You do not have permission to do that</string>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Backup and device-transfer rules (Android 12 and higher). Same exclusions as backup_rules.xml, for both cloud
+   backup and device-to-device transfer. Components add their exclusions inside the marker blocks.
+   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- <arch-spec:backup-exclusions-cloud> -->
+        <!-- </arch-spec:backup-exclusions-cloud> -->
+    </cloud-backup>
+    <device-transfer>
+        <!-- <arch-spec:backup-exclusions-transfer> -->
+        <!-- </arch-spec:backup-exclusions-transfer> -->
+    </device-transfer>
+</data-extraction-rules>

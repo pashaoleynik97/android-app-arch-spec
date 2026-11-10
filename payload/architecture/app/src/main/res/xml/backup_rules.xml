@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Auto Backup rules (Android 11 and lower). Everything is backed up except the files listed in the block below.
+
+   Components that store secrets or device-local scratch data add their exclusions inside the marker block (e.g.
+   a Keystore-encrypted token store: the key never travels with a backup, so a restored copy is undecryptable).
+   Keep the file names in sync with the stores that write them.
+   See https://developer.android.com/guide/topics/data/autobackup
+-->
+<full-backup-content>
+    <!-- <arch-spec:backup-exclusions> -->
+    <!-- </arch-spec:backup-exclusions> -->
+</full-backup-content>

@@ -1,0 +1,10 @@
+.idea/
+.DS_Store
+__pycache__/
+*.pyc
+# Build output of dry runs inside the fixture (the fixture itself is committed source)
+tests/fixtures/**/build/
+tests/fixtures/**/.gradle/
+tests/fixtures/**/.kotlin/
+tests/fixtures/**/local.properties
+installer/gates/.domain-leak-denylist

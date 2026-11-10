@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only network security config (component mitm-testing).
+
+  It lives in the `debug` source set, so it is merged ONLY into debuggable builds. Android additionally
+  honours <debug-overrides> only when the APK is android:debuggable="true" — so even if this file ever
+  reached another variant, it could not weaken a release APK.
+
+  Purpose: since API 24 apps do not trust user-installed CAs. This opts the debug build back into the
+  `user` store, so a locally installed proxy CA (mitmproxy) can intercept, inspect and mock HTTPS traffic.
+  OkHttp honours the system proxy, so no app code is involved.
+-->
+<network-security-config>
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

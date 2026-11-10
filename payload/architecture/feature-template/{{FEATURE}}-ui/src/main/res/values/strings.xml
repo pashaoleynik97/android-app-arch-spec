@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keys are prefixed with the feature package so modules never collide. -->
+<resources>
+    <string name="{{FEATURE_PKG}}_title">{{FEATURE_PASCAL}}</string>
+    <string name="{{FEATURE_PKG}}_empty_title">Nothing here yet</string>
+    <string name="{{FEATURE_PKG}}_empty_message">Items will appear here.</string>
+    <string name="{{FEATURE_PKG}}_items_count">Items: %1$d</string>
+    <string name="{{FEATURE_PKG}}_failure_title">Something went wrong</string>
+    <string name="{{FEATURE_PKG}}_failure_message">Check your connection and try again.</string>
+    <string name="{{FEATURE_PKG}}_retry">Try again</string>
+    <string name="{{FEATURE_PKG}}_refresh">Refresh</string>
+    <string name="{{FEATURE_PKG}}_refresh_failed">Could not refresh</string>
+</resources>
