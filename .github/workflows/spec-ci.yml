@@ -62,12 +62,13 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # `packages` is explicit: the action's default ("tools platform-tools") fails, because the obsolete `tools`
+      # package no longer exists in the SDK repository. The platform is the compileSdk of the known-good set
+      # (specs/toolchain.md); the runner image may not ship it yet.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-
-      # compileSdk of the known-good set (specs/toolchain.md); the runner image may not ship it yet.
-      - name: Install SDK platform
-        run: sdkmanager "platforms;android-37.0"
+        with:
+          packages: "platform-tools platforms;android-37.0"
 
       # Caches ~/.gradle (wrapper, dependencies, configuration cache is per project dir and not reused).
       - name: Set up Gradle
