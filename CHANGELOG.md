@@ -68,6 +68,9 @@ unchanged; switching them to the new role conventions is optional.
   install smoke on every PR and push to `main`; `backend-app` and `long-names` on manual dispatch.
 - `tests/smoke/install-smoke.sh` (`startup` | `backend-app` | `everything` | `long-names`), `render.py manifest` (read-only), and
   the MAINTAINING.md dry-run section that describes them.
+- Fix: `installer/gates/skills-lint.sh` "tab in frontmatter" used `\t` inside a grep regex, which GNU grep reads as
+  a literal `t` (false failures on Linux for any indented frontmatter line starting with "t") and BSD grep never
+  matched (no check at all on macOS). It now matches a real tab character.
 
 ## 0.1.0 — initial
 
