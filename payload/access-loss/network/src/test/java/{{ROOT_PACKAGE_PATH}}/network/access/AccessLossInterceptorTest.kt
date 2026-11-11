@@ -26,7 +26,10 @@ class AccessLossInterceptorTest {
 
     private lateinit var server: MockWebServer
     private val bus = RecordingAccessLossBus()
-    private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+    }
     private val interceptor = AccessLossInterceptor(bus, json, AccessLossConfig())
     private val client = OkHttpClient.Builder().addInterceptor(interceptor).build()
 

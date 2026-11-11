@@ -254,9 +254,9 @@ class PagerTest {
         source.respondWith("a", "b", "c", hasNext = true)
         advanceUntilIdle()
 
-        pager.onLastVisibleIndex(2)          // append for "ab" goes out
+        pager.onLastVisibleIndex(2) // append for "ab" goes out
         advanceUntilIdle()
-        pager.submitKey(TestKey("abc"))      // …and is superseded mid-flight
+        pager.submitKey(TestKey("abc")) // …and is superseded mid-flight
         advanceUntilIdle()
 
         source.respondWith("old-page-2")

@@ -21,7 +21,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** What the host tells the user after a refusal nobody else handled, while they stay where they are. */
-enum class AccessNotice { Forbidden }
+enum class AccessNotice {
+    Forbidden,
+}
 
 /**
  * The last link of the access-loss chain — whatever no screen and no feature filter consumed ends here, and here

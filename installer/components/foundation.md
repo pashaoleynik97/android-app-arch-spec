@@ -18,7 +18,9 @@ expected, because `architecture` follows in the same install. Don't hand out an 
 | `gradle.properties` | configuration cache ON, `android.disallowKotlinSourceSets=false` (KSP under built-in Kotlin) |
 | `gradle/libs.versions.toml` | the known-good catalog: Core libraries + test kit + convention-plugin aliases; Recommended components append their own blocks. **No** `kotlin-android` alias |
 | `gradle/gradle-daemon-jvm.properties`, `gradle/wrapper/gradle-wrapper.properties` | pinned daemon JVM and Gradle version of the known-good set |
-| `build-logic/` | composite build: `ProjectConfig` (SDK levels from `MIN_SDK` / `TARGET_SDK` / `COMPILE_SDK` / `JVM_TARGET`), `internal Project.libs`, convention plugins `{{CONVENTION_PREFIX}}.android.application`, `.application.compose`, `.library`, `.library.compose`, `.hilt`; the application/library conventions carry the unit-test defaults (`isReturnDefaultValues`, JUnit4, coroutines-test, Turbine, AndroidJUnitRunner) |
+| `build-logic/` | composite build: `ProjectConfig` (SDK levels from `MIN_SDK` / `TARGET_SDK` / `COMPILE_SDK` / `JVM_TARGET`), `internal Project.libs`, convention plugins `{{CONVENTION_PREFIX}}.android.application`, `.application.compose`, `.library`, `.library.compose`, `.hilt` and the feature-role conventions `{{CONVENTION_PREFIX}}.feature.api` / `.feature.ui` / `.feature.domain`; the application/library conventions carry the unit-test defaults (`isReturnDefaultValues`, JUnit4, coroutines-test, Turbine, AndroidJUnitRunner), Android Lint defaults (BUILD-25), ktlint through Spotless (BUILD-26) and the `checkModuleGraph` task (BUILD-24, rules unit-tested in `build-logic/convention/src/test`) |
+| `.editorconfig` | formatting rules shared by the IDE and ktlint (BUILD-26) |
+| `app/lint-baseline.xml` | the Android Lint baseline, rendered **empty** (BUILD-25) |
 | `app/build.gradle.kts` | conventions applied; versioning from `version.properties`; signing chain; `optimization { enable = false }` with the reason; the `// <arch-spec:app-dependencies>` marker block |
 | `app/src/main/keepRules/rules.keep` | the keep-rule location for when R8 is enabled |
 | `version.properties` | `VERSION_NAME=0.1.0` — single source of `versionName`/`versionCode` |
@@ -72,10 +74,19 @@ customised it (not the case in a fresh project).
 
 ```
 ./gradlew help
-./gradlew :app:assembleDebug
+./gradlew :build-logic:convention:test
+./gradlew :app:assembleDebug checkModuleGraph
 ```
 
-Show the command and the tail (`BUILD SUCCESSFUL`). The stock app still builds at this point.
+Show the command and the tail (`BUILD SUCCESSFUL`). The stock app still builds at this point. `spotlessCheck` and
+`:app:lintDebug` are not part of this gate: the stock Android Studio sources are not ktlint-formatted, and with a
+non-stock `APP_PACKAGE` lint rightly reports the manifest's `.MainActivity` as missing (see above).
+`architecture`, installed next, replaces those sources; its gate runs both.
+
+**Not a fresh project** (the module already has its own code): run `./gradlew spotlessApply` once and commit that
+reformat on its own, before any other change, so later diffs carry no formatting noise. If `:app:lintDebug` reports
+findings in existing code, show them to the user; with their agreement, record them once with
+`./gradlew :app:updateLintBaseline` (its own commit) — never for findings in code the installer rendered.
 
 ## Completing deferred items
 
@@ -100,6 +111,9 @@ Show the command and the tail (`BUILD SUCCESSFUL`). The stock app still builds a
 | `compileSdk` error from an androidx artifact ("requires compileSdk N") | raise `COMPILE_SDK` (`R set COMPILE_SDK=N`, `R rerender COMPILE_SDK`), keep `TARGET_SDK`. |
 | "Cannot find a Java installation … matching languageVersion=21" offline | the daemon JVM is provisioned through foojay; run once online or install that JDK locally. |
 | Configuration-cache problem mentioning a file read | a build script read a file with `java.io`; use `providers.fileContents(...)`. |
+| `spotlessKotlinCheck` / `spotlessKotlinGradleCheck` fails | `./gradlew spotlessApply`, review, commit. Never disable a ktlint rule to get green; `.editorconfig` changes are a reviewed decision (BUILD-26). |
+| `:app:lintDebug` "Aborting build since new baseline file was created" | `app/lint-baseline.xml` was deleted; restore it (`R status` shows it as modified/deleted) instead of letting lint regenerate it. |
+| `checkModuleGraph` fails with `MOD-…` | an illegal project edge (BUILD-24); fix the dependency (host seam, port, or move the code to `:app`), never the rule. |
 | Platform `android-<COMPILE_SDK>` missing | install it with `sdkmanager`, or (user's choice, recorded) set `COMPILE_SDK` to the newest installed platform ≥ what the catalog's libraries require. |
 
 ## Commit message

@@ -14,7 +14,10 @@ import retrofit2.Response
 
 class ApiErrorTest {
 
-    private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+    }
 
     private fun error(code: Int, body: String): Response<Unit> =
         Response.error(code, body.toResponseBody("application/json".toMediaType()))

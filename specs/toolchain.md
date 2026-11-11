@@ -24,7 +24,7 @@ version-conditionally so it stays true, or visibly stops applying, after an upgr
 | androidx.hilt (`hilt-lifecycle-viewmodel-compose`, `hilt-navigation-compose`) | 1.4.0 | `hiltViewModel()` lives in `hilt-lifecycle-viewmodel-compose` |
 | error_prone_annotations | 2.41.0 | `compileOnly` in the Hilt convention (BUILD-34) |
 | Compose BOM | 2026.02.01 | |
-| navigation-compose | 2.9.8 | classic string routes; Navigation 3 is out of scope |
+| navigation-compose | 2.9.8 | string routes (type-safe routes rejected, ADR-0011); Navigation 3 is out of scope |
 | androidx.lifecycle (runtime-ktx, runtime-compose, process, viewmodel-compose) | 2.11.0 | forces `compileSdk 37` (BUILD-35) |
 | activity-compose | 1.8.0 | |
 | core-ktx | 1.10.1 | |
@@ -35,6 +35,9 @@ version-conditionally so it stays true, or visibly stops applying, after an upgr
 | kotlinx-serialization-json | 1.8.0 | |
 | Coil 3 | 3.3.0 | pinned to the Kotlin line (BUILD-39); Recommended `images` component |
 | androidx.startup (`startup-runtime`) | 1.2.0 | process-start initializers of Recommended `media-store` and `images` |
+| Spotless Gradle plugin | 8.10.4 | runs ktlint (BUILD-26); configuration-cache compatible |
+| ktlint | 1.8.0 | formatting rules of every Kotlin file; bump on its own, then `spotlessApply` once |
+| Slack compose-lints | 1.6.1 | catalog entry only, opt-in (BUILD-25) |
 | JUnit | 4.13.2 | |
 | Turbine | 1.2.0 | |
 | SDK levels | `compileSdk 37`, `targetSdk 36`, `minSdk 24` | `{{COMPILE_SDK}}` / `{{TARGET_SDK}}` / `{{MIN_SDK}}` |

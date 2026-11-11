@@ -25,7 +25,6 @@ class InputDriverResolver @Inject constructor(
 
     fun resolve(preference: InputPreference): InputDriver? = when (preference) {
         InputPreference.Disabled -> null
-
         is InputPreference.Forced -> {
             val forced = providers.firstOrNull { it.id == preference.id }
             if (forced != null) {
@@ -40,7 +39,6 @@ class InputDriverResolver @Inject constructor(
                 resolve(InputPreference.Auto)
             }
         }
-
         InputPreference.Auto ->
             detectAll().firstOrNull { (_, detection) -> detection is Detection.Supported }?.first?.create()
     }

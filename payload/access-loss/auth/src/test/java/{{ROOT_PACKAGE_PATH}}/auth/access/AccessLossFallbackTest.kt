@@ -47,7 +47,11 @@ class AccessLossFallbackTest {
     private val scopeLost = AccessLoss.ScopeLost("/v1/items", "SCOPE_ACCESS_REVOKED")
 
     private fun TestScope.fallback(recoveries: Set<ScopeRecovery> = emptySet()) = AccessLossFallback(
-        bus, auth, recoveries, AccessLossConfig(maxRecoveries = 2), clock,
+        bus,
+        auth,
+        recoveries,
+        AccessLossConfig(maxRecoveries = 2),
+        clock,
         CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler)),
     ).also { runCurrent() }
 

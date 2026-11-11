@@ -1,6 +1,7 @@
 package {{ROOT_PACKAGE}}.input.settings
 
 import android.content.Context
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -34,7 +35,7 @@ internal class SharedPrefsInputSettingsStore @Inject constructor(
     }
 
     override suspend fun write(preference: InputPreference) = withContext(io) {
-        prefs().edit().putString(KEY_PREFERENCE, InputPreferenceCodec.encode(preference)).apply()
+        prefs().edit { putString(KEY_PREFERENCE, InputPreferenceCodec.encode(preference)) }
     }
 
     private fun prefs() = context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)

@@ -113,8 +113,11 @@ class ProactiveRefreshTest {
         val env = env()
         var attempt = 0
         env.service.refreshHandler = {
-            if (attempt++ == 0) AuthNetworkResult.Transient(null)
-            else AuthNetworkResult.Success("access-ok", "refresh-ok", FakeAuthService.TTL, user = null)
+            if (attempt++ == 0) {
+                AuthNetworkResult.Transient(null)
+            } else {
+                AuthNetworkResult.Success("access-ok", "refresh-ok", FakeAuthService.TTL, user = null)
+            }
         }
         signIn(env)
         env.activityTracker.recordInteraction()

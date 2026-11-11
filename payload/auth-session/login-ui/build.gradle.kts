@@ -1,8 +1,8 @@
 // :login-ui — the sign-in screen, its ViewModel and LoginFeatureImpl (the nav-graph registration).
+// The feature.ui convention brings library + Compose + Hilt, :lib-android, navigation-compose, hiltViewModel()
+// and :core-testing for tests.
 plugins {
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.library)
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.library.compose)
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.hilt)
+    alias(libs.plugins.{{CONVENTION_PREFIX}}.feature.ui)
 }
 
 android {
@@ -10,12 +10,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":lib-android"))
     implementation(project(":login-ui-api"))
     implementation(project(":login"))
-
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.hilt.lifecycle.viewmodel.compose)
-
-    testImplementation(project(":core-testing"))
 }

@@ -1,3 +1,7 @@
+// Named after what it does (parsing), not after its one class: renaming a rendered file would leave the old copy
+// behind in upgraded projects (a duplicate-class compile error), so the ktlint file-name rule is waived here.
+@file:Suppress("ktlint:standard:filename")
+
 package {{ROOT_PACKAGE}}.auth.network
 
 import kotlinx.serialization.json.JsonElement

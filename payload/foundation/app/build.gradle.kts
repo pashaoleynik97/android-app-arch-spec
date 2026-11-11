@@ -47,8 +47,11 @@ private val localKeystoreProps: Map<String, String> = providers
     ?.lineSequence()
     ?.mapNotNull { line ->
         val t = line.trim()
-        if (t.isEmpty() || t.startsWith("#") || !t.contains('=')) null
-        else t.substringBefore('=').trim() to t.substringAfter('=').trim()
+        if (t.isEmpty() || t.startsWith("#") || !t.contains('=')) {
+            null
+        } else {
+            t.substringBefore('=').trim() to t.substringAfter('=').trim()
+        }
     }
     ?.toMap()
     ?: emptyMap()

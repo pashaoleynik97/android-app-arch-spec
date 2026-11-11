@@ -65,13 +65,11 @@ internal class RetrofitAuthService @Inject constructor(
     ) { response ->
         when {
             response.isSuccessful -> response.body()?.let(toSuccess) ?: AuthNetworkResult.Transient(null)
-
             response.code() == HttpStatus.UNAUTHORIZED -> {
                 // Single-read body: parse once, use both fields.
                 val parsed = parseAuthError(response, json)
                 AuthNetworkResult.AuthRejected(parsed?.code ?: defaultRejectCode, parsed?.sessionEndReason)
             }
-
             response.code() == HttpStatus.BAD_REQUEST || response.code() == HttpStatus.FORBIDDEN -> {
                 val code = parseAuthError(response, json)?.code
                 if (code != null && code in DEFINITIVE_LOGIN_CODES) {
@@ -81,7 +79,6 @@ internal class RetrofitAuthService @Inject constructor(
                     AuthNetworkResult.Transient(null)
                 }
             }
-
             else -> {
                 Reporter.warn("auth call → ${response.code()}: transient", where = logTag)
                 AuthNetworkResult.Transient(null)

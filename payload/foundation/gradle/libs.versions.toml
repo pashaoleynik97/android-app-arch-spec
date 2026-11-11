@@ -32,6 +32,14 @@ composeBom = "2026.02.01"
 coroutines = "1.10.2"
 javaxInject = "1"
 
+# --- core code quality (formatting + lint, BUILD-25 / BUILD-26) ---
+spotless = "8.10.4"
+# The ktlint release decides the formatting of every Kotlin file. Bump it on its own branch, run
+# `./gradlew spotlessApply` once and commit the reformat separately, so no feature diff carries formatting noise.
+ktlint = "1.8.0"
+# Opt-in only (not applied by any convention): extra Compose lint rules. See the build-system skill reference.
+composeLints = "1.6.1"
+
 # --- core testing ---
 junit = "4.13.2"
 androidxJunit = "1.1.5"
@@ -61,6 +69,7 @@ kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-pl
 compose-gradlePlugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }
 ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 hilt-gradlePlugin = { group = "com.google.dagger", name = "hilt-android-gradle-plugin", version.ref = "hilt" }
+spotless-gradlePlugin = { group = "com.diffplug.spotless", name = "spotless-plugin-gradle", version.ref = "spotless" }
 
 # --- DI ---
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
@@ -93,6 +102,11 @@ androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-animation = { group = "androidx.compose.animation", name = "animation" }
 
+# --- code quality ---
+# Declared but deliberately unused (BUILD-12 exception): the documented opt-in for extra Compose lint checks is
+# `lintChecks(libs.compose.lints)` in a Compose module, or in the compose conventions for all of them.
+compose-lints = { group = "com.slack.lint.compose", name = "compose-lint-checks", version.ref = "composeLints" }
+
 # --- testing ---
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
@@ -124,6 +138,7 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 
 # --- convention plugins (defined in build-logic; the included build supplies the version) ---
 {{CONVENTION_PREFIX}}-android-application = { id = "{{CONVENTION_PREFIX}}.android.application", version = "unspecified" }
@@ -131,5 +146,8 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 {{CONVENTION_PREFIX}}-android-library = { id = "{{CONVENTION_PREFIX}}.android.library", version = "unspecified" }
 {{CONVENTION_PREFIX}}-android-library-compose = { id = "{{CONVENTION_PREFIX}}.android.library.compose", version = "unspecified" }
 {{CONVENTION_PREFIX}}-android-hilt = { id = "{{CONVENTION_PREFIX}}.android.hilt", version = "unspecified" }
+{{CONVENTION_PREFIX}}-feature-api = { id = "{{CONVENTION_PREFIX}}.feature.api", version = "unspecified" }
+{{CONVENTION_PREFIX}}-feature-ui = { id = "{{CONVENTION_PREFIX}}.feature.ui", version = "unspecified" }
+{{CONVENTION_PREFIX}}-feature-domain = { id = "{{CONVENTION_PREFIX}}.feature.domain", version = "unspecified" }
 
 # --- recommended components add their plugins below this line ---

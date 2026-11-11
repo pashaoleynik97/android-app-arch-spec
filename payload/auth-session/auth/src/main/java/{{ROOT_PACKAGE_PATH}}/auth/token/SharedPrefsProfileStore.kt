@@ -2,6 +2,7 @@ package {{ROOT_PACKAGE}}.auth.token
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -40,14 +41,16 @@ internal class SharedPrefsProfileStore @Inject constructor(
         }
     }
 
+    // `commit = true` on purpose (already on the IO dispatcher): written together with the session, which is
+    // committed synchronously too (KeystoreSecureTokenStore).
     override suspend fun save(user: SessionUser) = withContext(dispatchers.io) {
-        prefs.edit().putString(profileKey(user.id), json.encodeToString(ProfileRecord.serializer(), user.toRecord())).commit()
-        Unit
+        prefs.edit(commit = true) {
+            putString(profileKey(user.id), json.encodeToString(ProfileRecord.serializer(), user.toRecord()))
+        }
     }
 
     override suspend fun clear(userId: String) = withContext(dispatchers.io) {
-        prefs.edit().remove(profileKey(userId)).commit()
-        Unit
+        prefs.edit(commit = true) { remove(profileKey(userId)) }
     }
 
     private fun profileKey(userId: String) = "profile_$userId"

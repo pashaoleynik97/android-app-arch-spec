@@ -15,8 +15,9 @@ open class BaseViewModel : ViewModel() {
 
     protected val logTag: String = logTag()
 
+    // No `super.onCleared()`: ViewModel's is empty (lint EmptySuperCall). Subclasses that override this call super,
+    // so the teardown line is still logged.
     override fun onCleared() {
-        super.onCleared()
         Reporter.debug("onCleared", where = logTag)
     }
 }

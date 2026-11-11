@@ -62,8 +62,9 @@ Manual checks after install:
 ## Gate
 
 ```
-./gradlew assembleDebug
+./gradlew assembleDebug checkModuleGraph
 ./gradlew testDebugUnitTest
+./gradlew spotlessCheck :app:lintDebug
 ```
 
 Expected: all modules build; unit tests in `:lib-common`, `:lib-android`, `:feature-api`, `:core-testing`, `:home`,

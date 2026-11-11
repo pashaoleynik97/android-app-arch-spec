@@ -1,0 +1,37 @@
+# Formatting rules for the IDE and for ktlint (run through Spotless: `./gradlew spotlessApply` / `spotlessCheck`).
+# One file, read by both, so what the IDE formats is what the build accepts (BUILD-26).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Markdown uses two trailing spaces as a hard line break.
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{kt,kts}]
+indent_style = space
+indent_size = 4
+# The IntelliJ IDEA style follows the official Kotlin coding conventions (gradle.properties: kotlin.code.style).
+ktlint_code_style = intellij_idea
+# Multi-line parameter and argument lists end with a trailing comma: adding a line then changes one line, not two.
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+# 140, not 120: code generated from the architecture templates is kept within 120, and the margin absorbs longer
+# names chosen at install time (theme prefix, feature names), so a fresh project is never red on line length.
+max_line_length = 140
+# Whether a signature that fits on one line is joined or kept one-parameter-per-line is left to the author: both
+# rules decide by line length, which differs per project for template-generated code (see max_line_length).
+ktlint_standard_class-signature = disabled
+ktlint_standard_function-signature = disabled
+# No blank line forced between `when` branches: short branches read better together.
+ij_kotlin_line_break_after_multiline_when_entry = false
+# Composable functions are PascalCase by Compose convention.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# Disabled: the correct import order depends on the root package chosen at install (`com.…` sorts before
+# `kotlinx.…`, `org.…` after it), so one template cannot be ordered correctly for every project. The IDE's
+# "Optimize imports" keeps imports tidy; unused imports are still reported (no-unused-imports).
+ktlint_standard_import-ordering = disabled

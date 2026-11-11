@@ -15,8 +15,11 @@ class DefaultAccessLossBusTest {
     private val loss = AccessLoss.ScopeLost(where = "/v1/items", code = "SCOPE_ACCESS_REVOKED")
 
     /** Records what it was offered; consumes when [consumes]. */
-    private open class Recorder(private val consumes: Boolean = false, private val log: MutableList<String>? = null, private val name: String = "") :
-        AccessLossHandler {
+    private open class Recorder(
+        private val consumes: Boolean = false,
+        private val log: MutableList<String>? = null,
+        private val name: String = "",
+    ) : AccessLossHandler {
         val seen = mutableListOf<AccessLoss>()
         override suspend fun handle(loss: AccessLoss): Boolean {
             seen += loss

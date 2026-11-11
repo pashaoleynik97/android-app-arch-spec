@@ -23,6 +23,7 @@ siblings · 7. Naming and packages · 8. New-module checklist
 **MOD-01** — Dependencies MUST point downward along the graph above and MUST NEVER be inverted: kernel modules
 (`:lib-common`, `:feature-api`, `:lib-android`) never depend on a feature or infra module; domain modules never
 depend on UI modules; nothing depends on `:app`.
+The build enforces this rule, MOD-07, MOD-09, MOD-10, MOD-11 and MOD-19 with `checkModuleGraph` (BUILD-24).
 *Why:* an inverted edge turns the kernel into a hub that recompiles with every feature and makes features
 impossible to build or test alone.
 
@@ -78,8 +79,10 @@ A trivial feature with no domain logic MAY omit `:x`.
 *Why:* the host and sibling features need to navigate to `x` (routes, result keys) without compiling its UI or
 domain; the contract module is tiny and stable, so editing a screen recompiles only `:x-ui` and `:app`.
 
-**MOD-09** — `:x-ui-api` is an Android library (route builders use `android.net.Uri.encode`) with the library
-convention only — no Compose convention, no Hilt — and exactly one dependency, `api(project(":feature-api"))`.
+**MOD-09** — `:x-ui-api` is an Android library (route builders use `android.net.Uri.encode`) built with the
+`{{CONVENTION_PREFIX}}.feature.api` convention only — the library convention plus exactly one dependency,
+`api(project(":feature-api"))`; no Compose convention, no Hilt. `:x-ui` uses `{{CONVENTION_PREFIX}}.feature.ui`
+and `:x` uses `{{CONVENTION_PREFIX}}.feature.domain` (BUILD-03).
 *Why:* a contract that pulls Compose or Hilt makes every consumer pay for it.
 
 **MOD-10** — `:x` (domain) MUST NOT use Compose, `ViewModel`, lifecycle, or navigation types. It exposes
@@ -88,7 +91,8 @@ never HTTP types (see `60-data-and-errors.md`). Its Hilt module lives in `:x` (`
 *Why:* the ViewModel branches on outcomes only; keeping HTTP and persistence out of `:x-ui` keeps VM tests pure.
 
 **MOD-11** — A `:x-ui` module MUST NOT depend on another feature's `:y-ui`, `:y`, or `:y-ui-api`. Navigation to
-a sibling goes through host-supplied seams (MOD-18).
+a sibling goes through host-supplied seams (MOD-18). `checkModuleGraph` fails the build on such an edge
+(BUILD-24).
 *Why:* with no edges between features, any feature builds and runs standalone, and the dependency graph stays a
 star around the host instead of a mesh.
 
@@ -204,12 +208,14 @@ idempotently.
 ## 8. New-module checklist
 
 **MOD-22** — Every new module MUST have, in the same change:
-1. `build.gradle.kts` applying `{{CONVENTION_PREFIX}}.android.*` conventions only (no inline Android config that a
-   convention owns, see `20-build-system.md`), `namespace` per MOD-20;
+1. `build.gradle.kts` applying conventions only — the `{{CONVENTION_PREFIX}}.feature.*` role convention for a
+   feature-trio module, `{{CONVENTION_PREFIX}}.android.*` otherwise (no inline Android config or baseline edge that
+   a convention owns, see `20-build-system.md`), `namespace` per MOD-20;
 2. `src/main/AndroidManifest.xml` (an empty `<manifest/>` for libraries);
 3. an `include(...)` in `settings.gradle.kts` (MOD-21);
 4. a `.gitignore` containing `/build`;
-5. the `{{CONVENTION_PREFIX}}.android.hilt` convention if it declares any `@Inject` / `@Module` type (DI-05);
+5. the `{{CONVENTION_PREFIX}}.android.hilt` convention if it declares any `@Inject` / `@Module` type (DI-05;
+   `feature.ui` and `feature.domain` include it);
 6. an entry in the project's module table (CLAUDE.md / architecture skill) and, if the host consumes it, a
    commented dependency line in `app/build.gradle.kts`;
 7. unit tests for every non-trivial class (`70-testing.md`).

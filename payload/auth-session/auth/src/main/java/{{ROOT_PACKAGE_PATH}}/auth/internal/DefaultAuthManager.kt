@@ -375,8 +375,11 @@ internal class DefaultAuthManager @Inject constructor(
             RefreshOutcome.AuthFailed -> SessionResolution.UNAUTHENTICATED
             is RefreshOutcome.Transient -> SessionResolution.CONNECTION_ERROR
             RefreshOutcome.Stale ->
-                if (mAuthState.value is AuthState.Authenticated) SessionResolution.AUTHENTICATED
-                else SessionResolution.UNAUTHENTICATED
+                if (mAuthState.value is AuthState.Authenticated) {
+                    SessionResolution.AUTHENTICATED
+                } else {
+                    SessionResolution.UNAUTHENTICATED
+                }
         }
     }
 

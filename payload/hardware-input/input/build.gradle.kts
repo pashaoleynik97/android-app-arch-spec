@@ -20,6 +20,8 @@ dependencies {
 
     implementation(libs.javax.inject)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    // SharedPreferences.edit { } for the settings store.
+    implementation(libs.androidx.core.ktx)
 
     testImplementation(project(":core-testing"))
 }

@@ -1,3 +1,7 @@
+// Path data reads as drawing commands, several per line (one stroke segment per line); splitting every
+// statement onto its own line would make the icon shapes unreadable.
+@file:Suppress("ktlint:standard:statement-wrapping")
+
 package {{ROOT_PACKAGE}}.libandroid.ui.compose.uikit
 
 import androidx.compose.ui.graphics.Color

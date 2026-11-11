@@ -58,8 +58,11 @@ class RefreshFailureClassificationTest {
         val env = signedIn()
         var attempt = 0
         env.service.refreshHandler = {
-            if (attempt++ == 0) AuthNetworkResult.Transient(IOException("flaky"))
-            else AuthNetworkResult.Success("access-1", "refresh-1", 300, user = null)
+            if (attempt++ == 0) {
+                AuthNetworkResult.Transient(IOException("flaky"))
+            } else {
+                AuthNetworkResult.Success("access-1", "refresh-1", 300, user = null)
+            }
         }
 
         assertTrue(env.manager.refresh("access-alice") is RefreshOutcome.Transient)
@@ -87,7 +90,11 @@ class RefreshFailureClassificationTest {
         env.manager.refresh("access-alice")
 
         env.manager.expireSession(seenAccessToken = "access-alice")
-        assertEquals("a stale caller cannot kill the rotated session", AuthState.Authenticated("alice", "access-1"), env.manager.authState.value)
+        assertEquals(
+            "a stale caller cannot kill the rotated session",
+            AuthState.Authenticated("alice", "access-1"),
+            env.manager.authState.value,
+        )
 
         env.manager.expireSession(seenAccessToken = "access-1")
         assertEquals(AuthState.Unauthenticated(AuthState.Reason.SESSION_EXPIRED), env.manager.authState.value)

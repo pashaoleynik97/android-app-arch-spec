@@ -26,7 +26,7 @@ Notation: `{{UPPER_SNAKE}}` = an installer parameter (`installer/parameters.md`)
 |---|---|---|
 | `00-constitution.md` | — | articles 1–23 (point to rules; define none) |
 | `10-modules.md` | `MOD` | MOD-01 … MOD-22 |
-| `20-build-system.md` | `BUILD` | BUILD-01 … BUILD-23 |
+| `20-build-system.md` | `BUILD` | BUILD-01 … BUILD-26 |
 | `toolchain.md` | `BUILD` (gotchas) | BUILD-30 … BUILD-44 |
 | `30-di.md` | `DI` | DI-01 … DI-16 |
 | `40-kernel.md` | `KERNEL` | KERNEL-01 … KERNEL-20 |
@@ -48,7 +48,9 @@ Quick map of frequently cited rules:
 | host-supplied navigation seams | MOD-18 |
 | consumer-declared ports | MOD-19 |
 | new-module checklist | MOD-22 |
-| convention plugins | BUILD-03 |
+| convention plugins (platform + feature roles) | BUILD-03 |
+| module rules enforced by the build | BUILD-24 |
+| Android Lint, ktlint formatting | BUILD-25, BUILD-26 |
 | catalog-only versions | BUILD-10 |
 | config-cache-safe reads | BUILD-14, BUILD-41 |
 | versioning / signing / R8 | BUILD-17 … BUILD-22 |
@@ -82,6 +84,8 @@ Quick map of frequently cited rules:
 | `decisions/ADR-0008-separate-http-clients-per-concern.md` | separate qualified HTTP clients per concern |
 | `decisions/ADR-0009-activity-gated-keepalive-server-decides.md` | activity-gated keep-alive; the server decides session death |
 | `decisions/ADR-0010-convention-plugins-over-shared-scripts.md` | convention plugins in an included build over shared scripts |
+| `decisions/ADR-0011-string-routes-over-type-safe-routes.md` | string routes kept; type-safe `@Serializable` routes rejected |
+| `decisions/ADR-0012-module-graph-check-in-conventions.md` | module rules enforced by a convention task, not a third-party plugin |
 
 ## Recommended components
 

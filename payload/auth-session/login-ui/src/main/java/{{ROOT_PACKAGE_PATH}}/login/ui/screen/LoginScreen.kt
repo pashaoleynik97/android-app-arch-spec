@@ -157,5 +157,15 @@ private fun LoginErrorsPreview() = {{THEME_PREFIX}}Theme {
 @ReferenceDevicePreview
 @Composable
 private fun LoginSubmittingPreview() = {{THEME_PREFIX}}Theme {
-    LoginContent(LoginUxState(email = "user@example.test", passwordLength = 8, isSubmitting = true), password = "secret12", onEmailChange = {}, onPasswordChange = {}, onSubmit = {})
+    LoginContent(
+        LoginUxState(
+            email = "user@example.test",
+            passwordLength = 8,
+            isSubmitting = true,
+        ),
+        password = "secret12",
+        onEmailChange = {},
+        onPasswordChange = {},
+        onSubmit = {},
+    )
 }

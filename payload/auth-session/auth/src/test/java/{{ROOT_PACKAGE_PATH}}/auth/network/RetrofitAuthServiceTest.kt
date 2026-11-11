@@ -33,7 +33,10 @@ class RetrofitAuthServiceTest {
     @Before
     fun setUp() {
         server = MockWebServer().apply { start() }
-        val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+        val json = Json {
+            ignoreUnknownKeys = true
+            explicitNulls = false
+        }
         val api = Retrofit.Builder()
             .baseUrl(server.url("/"))
             .client(OkHttpClient())
@@ -98,7 +101,11 @@ class RetrofitAuthServiceTest {
 
     @Test
     fun `a refresh 2xx is a success with no user`() = runBlocking {
-        server.enqueue(MockResponse().setBody("""{"data":{"accessToken":"fake-access-2","refreshToken":"fake-refresh-2","expiresIn":60},"timestamp":"t"}"""))
+        server.enqueue(
+            MockResponse().setBody(
+                """{"data":{"accessToken":"fake-access-2","refreshToken":"fake-refresh-2","expiresIn":60},"timestamp":"t"}""",
+            ),
+        )
 
         assertEquals(AuthNetworkResult.Success("fake-access-2", "fake-refresh-2", 60, user = null), service.refresh("fake-refresh-1"))
         assertEquals("""{"refreshToken":"fake-refresh-1"}""", server.takeRequest().body.readUtf8())
@@ -113,8 +120,16 @@ class RetrofitAuthServiceTest {
 
         assertEquals(AuthNetworkResult.AuthRejected(AuthErrorCode.REFRESH_TOKEN_INVALID), service.refresh("r"))
         assertEquals(AuthNetworkResult.AuthRejected(AuthErrorCode.SESSION_REVOKED, SessionEndReason.NEW_LOGIN), service.refresh("r"))
-        assertEquals("an unknown reason is null, never a crash", AuthNetworkResult.AuthRejected(AuthErrorCode.SESSION_REVOKED, null), service.refresh("r"))
-        assertEquals("no envelope: the endpoint's default code", AuthNetworkResult.AuthRejected(AuthErrorCode.REFRESH_TOKEN_INVALID), service.refresh("r"))
+        assertEquals(
+            "an unknown reason is null, never a crash",
+            AuthNetworkResult.AuthRejected(AuthErrorCode.SESSION_REVOKED, null),
+            service.refresh("r"),
+        )
+        assertEquals(
+            "no envelope: the endpoint's default code",
+            AuthNetworkResult.AuthRejected(AuthErrorCode.REFRESH_TOKEN_INVALID),
+            service.refresh("r"),
+        )
     }
 
     @Test

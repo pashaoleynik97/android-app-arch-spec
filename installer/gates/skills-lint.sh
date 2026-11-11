@@ -18,7 +18,9 @@ while IFS= read -r skill; do
   if ! printf '%s\n' "$fm" | grep -q '^description:'; then echo "FAIL $skill: no description"; fail=1; fi
   desc=$(printf '%s\n' "$fm" | awk '/^description:/{f=1; sub(/^description:[[:space:]]*>?-?[[:space:]]*/,""); print; next} f && /^[a-z_-]+:/{f=0} f{print}' | tr -s ' \n' ' ')
   if (( ${#desc} > 1024 )); then echo "FAIL $skill: description ${#desc} chars > 1024"; fail=1; fi
-  if printf '%s\n' "$fm" | grep -qE '^\s*\t'; then echo "FAIL $skill: tab in frontmatter"; fail=1; fi
+  # A real tab character ($'\t'): in a grep regex `\t` is not portable — GNU grep reads it as a literal `t` and
+  # flags every indented line starting with "t", BSD grep never matches it.
+  if printf '%s\n' "$fm" | grep -q "^[[:space:]]*"$'\t'; then echo "FAIL $skill: tab in frontmatter"; fail=1; fi
   lines=$(wc -l < "$skill" | tr -d ' ')
   if (( lines > 500 )); then echo "FAIL $skill: $lines lines > 500 — split into references/"; fail=1
   elif (( lines > 300 )); then echo "WARN $skill: $lines lines > 300"; warn=1; fi

@@ -1,9 +1,9 @@
 // :engineering-ui — the hidden engineering (diagnostics) menu. Rows come from EngineeringSection contributions
 // (a Hilt multibinding), so installed modules add their own diagnostics without this module knowing them.
+// The feature.ui convention brings library + Compose + Hilt, :lib-android, navigation-compose, hiltViewModel()
+// and :core-testing for tests. A feature without a domain module (MOD-08 allows that for a trivial feature).
 plugins {
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.library)
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.library.compose)
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.hilt)
+    alias(libs.plugins.{{CONVENTION_PREFIX}}.feature.ui)
 }
 
 android {
@@ -23,14 +23,8 @@ if (hasHardwareInput) {
 }
 
 dependencies {
-    implementation(project(":lib-android"))
     implementation(project(":engineering-ui-api"))
-
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.hilt.lifecycle.viewmodel.compose)
 
     // The hardware-input section (src/withInput) reads the input controller and settings.
     if (hasHardwareInput) implementation(project(":input"))
-
-    testImplementation(project(":core-testing"))
 }

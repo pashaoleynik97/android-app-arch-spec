@@ -22,6 +22,8 @@ Usage (run from anywhere; paths are explicit):
   render.py snapshot   --target DIR --out EMPTY_DIR       render what THIS spec produces for the project ("theirs")
   render.py relocate   --target DIR OLD NEW               record a renamed module dir (after `git mv OLD NEW`)
   render.py rebase     --target DIR --snapshot DIR        finish an upgrade: snapshot → baseline, re-record checksums
+  render.py manifest   [--tier T] [--gates COMPONENT]       read-only: component ids (manifest order, optionally one
+                                                          tier) or one component's gate commands, one per line
   render.py --self-check                                  validate this spec repo (placeholders, manifest, payload)
 
 Exit codes: 0 ok · 1 usage/validation error · 2 conflicts were written as *.arch-spec-new (agent must resolve).
@@ -847,12 +849,29 @@ def cmd_self_check() -> int:
     return 0
 
 
+def cmd_manifest(tier: str | None, gates_of: str | None) -> int:
+    """Print manifest facts one per line, so shell scripts (tests/smoke, CI) never parse YAML themselves."""
+    manifest = load_manifest()
+    if gates_of:
+        if gates_of not in manifest:
+            print(f"error: unknown component '{gates_of}'", file=sys.stderr)
+            return 1
+        lines = manifest[gates_of].get("gate") or []
+    else:
+        lines = [c for c, comp in manifest.items() if tier is None or comp.get("tier") == tier]
+    print("\n".join(lines))
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--self-check", action="store_true")
     # Accepted before OR after the subcommand (INSTALL.md's shorthand `render.py --target . install X`).
     ap.add_argument("--target", type=Path, dest="target_global")
     sub = ap.add_subparsers(dest="cmd")
+    mp = sub.add_parser("manifest")
+    mp.add_argument("--tier", choices=("core", "recommended"))
+    mp.add_argument("--gates", metavar="COMPONENT")
     for c in ("init", "set", "plan", "install", "scaffold-feature", "rerender", "status", "snapshot", "relocate",
               "rebase"):
         p = sub.add_parser(c)
@@ -879,6 +898,8 @@ def main(argv=None) -> int:
     if not a.cmd:
         ap.print_help()
         return 1
+    if a.cmd == "manifest":
+        return cmd_manifest(a.tier, a.gates)
     target_arg = a.target_sub or a.target_global
     if target_arg is None:
         ap.error("--target DIR is required")

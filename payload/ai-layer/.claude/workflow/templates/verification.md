@@ -4,6 +4,7 @@ Environment: <device / emulator, API level, screen>, build <variant> from <worki
 files used <(new ones marked)>; setup path <…>. Evidence in `evidence/`.
 
 ## Unit / build
+`./gradlew spotlessApply` then `./gradlew spotlessCheck checkModuleGraph :app:lintDebug` → <green / findings>
 <commands> → <counts>
 
 ## Results

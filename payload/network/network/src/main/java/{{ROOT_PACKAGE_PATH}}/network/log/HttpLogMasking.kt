@@ -14,7 +14,14 @@ object HttpLogMasking {
 
     /** JSON field names whose string values are secrets. Matched case-insensitively. */
     val SECRET_FIELDS: Set<String> = setOf(
-        "password", "accessToken", "refreshToken", "access_token", "refresh_token", "token", "secret", "otp",
+        "password",
+        "accessToken",
+        "refreshToken",
+        "access_token",
+        "refresh_token",
+        "token",
+        "secret",
+        "otp",
     )
 
     private const val VISIBLE_PREFIX = 4

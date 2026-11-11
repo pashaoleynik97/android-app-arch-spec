@@ -1,0 +1,90 @@
+name: Spec CI
+
+# CI for THIS spec repository (the `ci-cd` payload under payload/ci-cd is for installed projects, not this one).
+# A version bump or a payload edit can break a fresh install without touching any spec text, so every change is
+# rendered into the stock "Empty Activity" fixture and built. The smoke logic lives in tests/smoke/install-smoke.sh
+# so a red run is reproducible locally with the same command.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Also run the slower backend-app and long-names scenarios"
+        type: boolean
+        default: true
+
+# A new push to the same ref makes the running check obsolete.
+concurrency:
+  group: spec-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  self-check:
+    name: Render self-check + lints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Placeholders defined, manifest paths exist
+        run: python3 installer/render.py --self-check
+      # Without the maintainer-local deny-list only the English-only check runs (the list is never committed).
+      - name: Domain leak (English-only)
+        run: bash installer/gates/domain-leak.sh .
+      - name: Skills lint
+        run: bash installer/gates/skills-lint.sh .
+
+  smoke:
+    name: Install smoke (${{ matrix.scenario }})
+    needs: self-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # backend-app and long-names (every component, long install answers) are slower and run only on manual
+        # dispatch; startup guards every PR.
+        scenario: ${{ (github.event_name == 'workflow_dispatch' && inputs.full) && fromJSON('["startup","backend-app","long-names"]') || fromJSON('["startup"]') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Gradle daemon JVM is provisioned separately (gradle/gradle-daemon-jvm.properties + foojay resolver);
+      # this JDK only launches the wrapper. Keep it at the CI JDK of specs/toolchain.md.
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # `packages` is explicit: the action's default ("tools platform-tools") fails, because the obsolete `tools`
+      # package no longer exists in the SDK repository. The platform is the compileSdk of the known-good set
+      # (specs/toolchain.md); the runner image may not ship it yet.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-37.0"
+
+      # Caches ~/.gradle (wrapper, dependencies, configuration cache is per project dir and not reused).
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Smoke ${{ matrix.scenario }}
+        run: bash tests/smoke/install-smoke.sh "${{ matrix.scenario }}" --keep "${{ runner.temp }}/smoke/proj"
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-${{ matrix.scenario }}-reports
+          path: |
+            ${{ runner.temp }}/smoke/proj/**/build/reports/
+            ${{ runner.temp }}/smoke/proj/.arch-spec/state.json
+          if-no-files-found: ignore
