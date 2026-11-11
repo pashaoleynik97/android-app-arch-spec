@@ -236,7 +236,11 @@ private fun PickerOptionRow(option: EngineeringOption, selected: Boolean, onSele
         horizontalArrangement = Arrangement.spacedBy(dimens.spaceMedium),
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(option.label, style = {{THEME_PREFIX}}Theme.typography.bodyLarge, color = {{THEME_PREFIX}}Theme.colors.onSurface)
+            Text(
+                option.label,
+                style = {{THEME_PREFIX}}Theme.typography.bodyLarge,
+                color = {{THEME_PREFIX}}Theme.colors.onSurface,
+            )
             if (option.description.isNotEmpty()) {
                 Text(
                     option.description,

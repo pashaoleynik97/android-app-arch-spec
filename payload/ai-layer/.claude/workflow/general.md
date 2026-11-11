@@ -59,6 +59,8 @@ Every file starts with a status line, kept up to date in place:
 - **Skills.** Run the capture checklist of the `skills-maintenance` skill before declaring the task done; a
   convention change updates the owning skill and its `CHANGELOG.md` in the same change.
 - **Verification.** Unit tests by default: run the exact commands from the plan and record the counts.
+  Before them, `./gradlew spotlessApply`, then `./gradlew spotlessCheck checkModuleGraph :app:lintDebug` must be
+  green (formatting, module rules, lint — the same gates as CI).
   Device / emulator verification only when the developer explicitly asks; otherwise the log says
   "Not verified on device (on-demand only)".
 - **History.** Never commit, push or open a pull request unless asked. When asked, work on a branch off the

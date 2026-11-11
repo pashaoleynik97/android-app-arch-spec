@@ -17,7 +17,11 @@ non-trivial edit). The rules most often broken here:
 - `.compose` conventions are listed after the base `.android.library` / `.android.application` (BUILD-05).
 - Never apply the standalone Kotlin Android plugin on AGP with built-in Kotlin (BUILD-30).
 - The configuration cache stays on: read files and properties only through `providers` (BUILD-14, BUILD-41).
-- A module that declares any injected type applies the hilt convention (DI-05).
+- A module that declares any injected type applies the hilt convention (DI-05). Feature-trio modules apply
+  their role convention (`feature.api` / `feature.ui` / `feature.domain`) and add only their own edges (BUILD-03).
+- A red `checkModuleGraph` names a module rule (MOD-…): fix the edge, never `ModuleGraphRules` (BUILD-24).
+- Lint and ktlint are configured in the conventions and `.editorconfig`; never disable a check or add to
+  `app/lint-baseline.xml` to get green — fix the code, or suppress one line with a comment saying why (BUILD-25, BUILD-26).
 - A new module completes the whole new-module checklist in the same change (MOD-22).
 - Every dependency line in the host build file says why the host needs it (MOD-14).
 - A changed convention, new convention or toolchain gotcha updates the build-system / toolchain reference in

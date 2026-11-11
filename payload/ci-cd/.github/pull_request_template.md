@@ -9,6 +9,7 @@
 ## Checklist
 
 - [ ] `./gradlew testDebugUnitTest` passes locally; new behaviour has unit tests (backtick-sentence names, hand-written fakes)
+- [ ] `./gradlew spotlessCheck checkModuleGraph :app:lintDebug` passes (run `spotlessApply` first)
 - [ ] `./gradlew assembleDebug` passes
 - [ ] Skills updated in this PR if a convention, module, build rule or shared component changed (`.claude/skills/**`, `CLAUDE.md`)
 - [ ] `.docs/` updated if user-visible behaviour, a data/session lifecycle or a QA matrix changed

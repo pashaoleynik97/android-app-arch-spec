@@ -3,7 +3,9 @@ package {{ROOT_PACKAGE}}.{{FEATURE_PKG}}.ui.screen
 import kotlinx.coroutines.flow.StateFlow
 
 /** The one transient message slot of the screen. The newest notice replaces the previous one. */
-enum class {{FEATURE_PASCAL}}Notice { RefreshFailed }
+enum class {{FEATURE_PASCAL}}Notice {
+    RefreshFailed,
+}
 
 /**
  * What the screen renders. **Plain data, no `Context`**: the composable resolves strings from resources, so

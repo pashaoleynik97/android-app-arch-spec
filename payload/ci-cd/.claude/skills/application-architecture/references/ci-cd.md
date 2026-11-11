@@ -16,7 +16,7 @@ Four GitHub Actions workflows in `.github/workflows/`; git flow is feature branc
 
 | File | Trigger | Concurrency | Does |
 |---|---|---|---|
-| `pr-build.yml` | PR into the default branch | per ref, cancel in progress | `testDebugUnitTest :app:assembleDebug` + skills lint (CI-05) |
+| `pr-build.yml` | PR into the default branch | per ref, cancel in progress | `testDebugUnitTest :app:assembleDebug`, `spotlessCheck checkModuleGraph :app:lintDebug` (lint reports uploaded on failure, CI-02) + skills lint (CI-05) |
 | `publish.yml` | push to the default branch | one group, **no** cancel (serialized) | tests → bump PATCH (bot mode `github-app`) → release + debug APKs `-test` → run artifact (90 days) |
 | `release-trigger.yml` | manual, checkboxes major / minor / patch | one group, no cancel | semver bump with reset → cut `release/<new>` |
 | `release.yml` | push to `release/**` (or dispatch) | per ref, cancel in progress | tests → `assembleRelease -PreleaseBuild=true` → run artifact + GitHub Release `v<ver>` with the APK |

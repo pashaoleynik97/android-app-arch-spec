@@ -337,6 +337,16 @@ class Repo:
                 text = re.sub(r"(?m)^\s*//.*$", "", text)
                 for call in re.findall(r"include\s*\(([^)]*)\)", text):
                     self._modules.update(re.findall(r"\"(:[^\"]+)\"", call))
+                # Included builds (`includeBuild("build-logic")`): their projects are addressed as
+                # `:build-logic:<project>` from the root build, e.g. `./gradlew :build-logic:convention:test`.
+                for name in re.findall(r"includeBuild\s*\(\s*\"([^\"]+)\"\s*\)", text):
+                    build = Path(name).name
+                    self._modules.add(f":{build}")
+                    nested = self.root / name / "settings.gradle.kts"
+                    if nested.is_file():
+                        nested_text = re.sub(r"(?m)^\s*//.*$", "", nested.read_text(encoding="utf-8"))
+                        for call in re.findall(r"include\s*\(([^)]*)\)", nested_text):
+                            self._modules.update(f":{build}{m}" for m in re.findall(r"\"(:[^\"]+)\"", call))
         return self._modules
 
     @property

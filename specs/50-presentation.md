@@ -195,8 +195,14 @@ object XRoutes {
 - **routes carry ids only**, never payloads — enough to re-read after process death;
 - optional arguments are **query parameters** declared `nullable = true, defaultValue = null`, so callers
   without the value build the same route;
-- cross-module captions travel as opaque tokens the callee maps to its own strings, never as text or resource ids.
-*Why:* payloads in routes break on size and process death; resource ids differ per module and build.
+- cross-module captions travel as opaque tokens the callee maps to its own strings, never as text or resource ids;
+- an argument is named only through its `ARG_*` constant — in the template, the builder and every reader
+  (`entry.arguments`, `SavedStateHandle`); no string literal names an argument elsewhere.
+
+String routes are a recorded choice: type-safe `@Serializable` routes were considered and rejected (ADR-0011).
+*Why:* payloads in routes break on size and process death; resource ids differ per module and build; with one
+constant per argument a rename is a single compile-checked edit, which is the guarantee the rejected type-safe
+routes would have added.
 
 **UI-20** — Destinations are flat `composable(…)` calls (no nested graphs by default). Non-root destinations use
 the shared `AppTransitions` (`enter`, `exit`, `popEnter`, `popExit`) from `:lib-android`. Re-rooting uses

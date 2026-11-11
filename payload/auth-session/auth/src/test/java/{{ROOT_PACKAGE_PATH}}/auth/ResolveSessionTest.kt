@@ -59,8 +59,11 @@ class ResolveSessionTest {
         env.store.seed("alice", "refresh-alice")
         var attempt = 0
         env.service.refreshHandler = {
-            if (attempt++ == 0) AuthNetworkResult.Transient(IOException("offline"))
-            else AuthNetworkResult.Success("access-new", "refresh-next", 300, user = null)
+            if (attempt++ == 0) {
+                AuthNetworkResult.Transient(IOException("offline"))
+            } else {
+                AuthNetworkResult.Success("access-new", "refresh-next", 300, user = null)
+            }
         }
 
         assertEquals(SessionResolution.CONNECTION_ERROR, env.manager.resolveSession())

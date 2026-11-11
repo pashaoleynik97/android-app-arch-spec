@@ -3,8 +3,10 @@
 A specification and an installer that an AI coding agent uses to turn a freshly created Android Studio
 "Empty Activity" project into a production-shaped one. The result has:
 
-- **Build system**: a Gradle `build-logic` composite with convention plugins, a version catalog as the only place
-  versions live, configuration cache on, CI-owned versioning and a signing chain.
+- **Build system**: a Gradle `build-logic` composite with convention plugins (including one per feature-module
+  role), a version catalog as the only place versions live, configuration cache on, CI-owned versioning and a
+  signing chain. The build enforces the module dependency rules (`checkModuleGraph`), ktlint formatting through
+  Spotless, and Android Lint.
 - **Architecture**: a layered multi-module app (`:app → :lib-android → :feature-api → :lib-common`). Every feature is
   three modules (`-ui-api` contract / `-ui` Compose / domain). Hilt DI throughout. ViewModels follow a strict
   State → UxState contract, and host-owned chrome (top bar, snackbars) is driven declaratively by screens.
@@ -43,7 +45,7 @@ component's own checks) and is committed separately on the `arch-spec/install` b
 
 | Component | Tier | What you get |
 |---|---|---|
-| `foundation` | Core | build-logic conventions, catalog, gradle.properties, versioning + signing in `:app` |
+| `foundation` | Core | build-logic conventions (platform + feature roles), module-graph check, lint + ktlint defaults, `.editorconfig`, catalog, gradle.properties, versioning + signing in `:app` |
 | `ai-layer` | Core | `CLAUDE.md`, skills (architecture, compose-ui, add-feature, skills-maintenance), rules, settings, task-workflow templates, skill lint/ref-check tools |
 | `architecture` | Core | `:lib-common`, `:feature-api`, `:lib-android` (theme, host chrome, base kit), `:core-testing`, `:app` host, reference feature `home` |
 | `docs` | Core | README and architecture-doc skeletons |
@@ -80,6 +82,8 @@ upgrades, then re-verifies every trap.
 | `installer/` | parameters, component manifest, questionnaire, per-component procedures, renderer, gates |
 | `payload/` | the files laid into a project, one directory per component |
 | `tests/fixtures/` | a stock empty project used by the dry runs |
+| `tests/smoke/` | `install-smoke.sh`: scripted startup / backend-app / everything dry runs (CI runs startup on every PR) |
+| `.github/workflows/` | `spec-ci.yml`: self-check, lints and install smoke for this repository |
 | `MAINTAINING.md` | how to change the spec safely and how to run the dry runs |
 
 ## After installation

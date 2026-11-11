@@ -6,7 +6,7 @@ repository admin rights. Nothing here is required for a **green** pipeline: with
 
 | Workflow | Trigger | Does |
 |---|---|---|
-| `pr-build.yml` | pull request into `{{DEFAULT_BRANCH}}` | `testDebugUnitTest` + `:app:assembleDebug` (+ skills lint if present) |
+| `pr-build.yml` | pull request into `{{DEFAULT_BRANCH}}` | `testDebugUnitTest` + `:app:assembleDebug`, `spotlessCheck checkModuleGraph :app:lintDebug` (+ skills lint if present) |
 | `publish.yml` | push to `{{DEFAULT_BRANCH}}` (a merge) | tests → bump PATCH (bot mode `github-app`) → release + debug APKs `-test` → run artifact |
 | `release-trigger.yml` | manual, checkboxes major / minor / patch | semver bump with reset → cut `release/<version>` |
 | `release.yml` | push to `release/**` (or dispatch) | tests → release APK (no suffix) → run artifact + GitHub Release `v<version>` |

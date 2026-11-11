@@ -112,8 +112,11 @@ and two banners.
 **UI-19** — Routes live in `object XRoutes` in the contract module: `const val ARG_ID`, a registered template
 (`"x/details/{$ARG_ID}?mode={mode}"`) and a builder that encodes every segment with `Uri.encode`. Never
 navigate to a template; routes carry ids only; optional arguments are query parameters declared nullable with
-a `null` default; cross-module captions travel as opaque tokens the callee maps to its own strings. *Why:*
-payloads in routes break on size and process death; resource ids differ per module and build.
+a `null` default; cross-module captions travel as opaque tokens the callee maps to its own strings; an
+argument is named only through its `ARG_*` constant (template, builder, every reader). Type-safe
+`@Serializable` routes were considered and rejected (spec ADR-0011) — do not migrate to them. *Why:*
+payloads in routes break on size and process death; resource ids differ per module and build; one constant per
+argument makes a rename a single compile-checked edit.
 <!-- origin: arch-spec UI-19 -->
 
 ```kotlin

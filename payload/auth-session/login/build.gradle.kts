@@ -1,8 +1,8 @@
 // :login — the sign-in feature's domain: input validation and the sign-in / sign-out use cases over the
-// session (:auth). No Compose, no ViewModels.
+// session (:auth). No Compose, no ViewModels. The feature.domain convention brings library + Hilt, :lib-common,
+// javax.inject and :core-testing for tests.
 plugins {
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.library)
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.hilt)
+    alias(libs.plugins.{{CONVENTION_PREFIX}}.feature.domain)
 }
 
 android {
@@ -10,9 +10,5 @@ android {
 }
 
 dependencies {
-    implementation(project(":lib-common"))
     implementation(project(":auth"))
-    implementation(libs.javax.inject)
-
-    testImplementation(project(":core-testing"))
 }

@@ -2,8 +2,8 @@
 
 Multi-module Android app — Kotlin, Jetpack Compose, Hilt, Gradle convention plugins in an included
 `build-logic` build. Every module's package lives under `{{ROOT_PACKAGE}}`; convention plugins are
-`{{CONVENTION_PREFIX}}.android.*`; the design system is **{{THEME_PREFIX}}Theme**. The architecture was rolled in
-from a spec whose copy, install state and pristine baseline live in `.arch-spec/` (committed; never edit
+`{{CONVENTION_PREFIX}}.android.*` and, for feature modules, `{{CONVENTION_PREFIX}}.feature.*`; the design system
+is **{{THEME_PREFIX}}Theme**. The architecture was rolled in from a spec whose copy, install state and pristine baseline live in `.arch-spec/` (committed; never edit
 `.arch-spec/baseline/` by hand).
 
 ## Architecture & conventions
@@ -50,6 +50,8 @@ A trivial feature may omit the domain module. Use the **add-feature** skill to c
 ./gradlew assembleDebug                           # full build (configuration cache is on)
 ./gradlew testDebugUnitTest                       # all JVM unit tests — the CI gate
 ./gradlew :<module>:testDebugUnitTest             # one module while iterating
+./gradlew spotlessApply                           # format Kotlin + build scripts (ktlint); run before verifying
+./gradlew spotlessCheck checkModuleGraph :app:lintDebug   # formatting, module dependency rules, Android Lint
 bash tools/skills/lint.sh && bash tools/skills/check-refs.sh    # AI-layer health (skills, rules, this file)
 python3 .arch-spec/spec/installer/render.py status --target .   # installed components, deferred items
 ```
@@ -60,6 +62,8 @@ python3 .arch-spec/spec/installer/render.py status --target .   # installed comp
   module build files are declarative.
 - On AGP with built-in Kotlin never apply the standalone Kotlin Android plugin; the configuration cache stays
   on, so build scripts read files only through `providers`.
+- Formatting is ktlint's (`spotlessApply`), not yours; lint findings are fixed, never added to
+  `app/lint-baseline.xml`; a red `checkModuleGraph` means the dependency is wrong, not the check.
 - Log only through the kernel Reporter (`where = logTag`); never `android.util.Log` elsewhere; never log
   credentials.
 - Every screen: Hilt ViewModel + thin base class + a per-screen contract interface; navigation code only in

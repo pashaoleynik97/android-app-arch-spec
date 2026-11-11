@@ -133,6 +133,11 @@ private fun DialogPreview() = {{THEME_PREFIX}}Theme {
         onDismissRequest = {},
     ) {
         {{THEME_PREFIX}}Button("Keep editing", onClick = {}, modifier = Modifier.fillMaxWidth())
-        {{THEME_PREFIX}}Button("Discard", onClick = {}, variant = {{THEME_PREFIX}}ButtonVariant.Negative, modifier = Modifier.fillMaxWidth())
+        {{THEME_PREFIX}}Button(
+            "Discard",
+            onClick = {},
+            variant = {{THEME_PREFIX}}ButtonVariant.Negative,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }

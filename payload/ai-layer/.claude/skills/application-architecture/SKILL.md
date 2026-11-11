@@ -44,7 +44,8 @@ Where things live:
 
 **MOD-01** — Dependencies point one way — host → features / infra → kernel (`lib-android` → `feature-api` →
 `lib-common`) — and are never inverted: the kernel never depends on a feature or infra module, a domain module
-never depends on a UI module, nothing depends on the host. *Why:* an inverted edge turns the kernel into a hub
+never depends on a UI module, nothing depends on the host. `./gradlew checkModuleGraph` fails the build on an
+inverted edge (BUILD-24). *Why:* an inverted edge turns the kernel into a hub
 that recompiles with every feature and makes features impossible to build or test alone.
 <!-- origin: arch-spec MOD-01 -->
 
@@ -58,7 +59,7 @@ to a feature through its tiny contract without compiling its UI or domain; editi
 
 **MOD-11** — A feature's modules never depend on another feature's modules. Cross-feature navigation goes
 through host-supplied seams (nullable constructor parameters of the FeatureImpl, filled by the host); a domain
-that needs a sibling declares its own port, bound by the host. *Why:* without edges between features any
+that needs a sibling declares its own port, bound by the host. `checkModuleGraph` rejects such an edge. *Why:* without edges between features any
 feature builds and runs alone, and the graph stays a star around the host instead of a mesh.
 <!-- origin: arch-spec MOD-11 -->
 

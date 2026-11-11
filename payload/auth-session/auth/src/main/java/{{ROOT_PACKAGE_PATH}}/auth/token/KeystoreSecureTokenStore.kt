@@ -2,6 +2,7 @@ package {{ROOT_PACKAGE}}.auth.token
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -64,17 +65,17 @@ internal class KeystoreSecureTokenStore @Inject constructor(
         }
     }
 
+    // `commit = true` on purpose (already on the IO dispatcher): the session must be on disk before the caller
+    // treats it as stored; `apply()` could lose it if the process dies right after sign-in.
     override suspend fun save(userId: String, refreshToken: String) = withContext(dispatchers.io) {
-        prefs.edit()
-            .putString(refreshKey(userId), encrypt(refreshToken))
-            .putString(KEY_CURRENT_USER, userId)
-            .commit()
-        Unit
+        prefs.edit(commit = true) {
+            putString(refreshKey(userId), encrypt(refreshToken))
+            putString(KEY_CURRENT_USER, userId)
+        }
     }
 
     override suspend fun clear() = withContext(dispatchers.io) {
-        prefs.edit().clear().commit()
-        Unit
+        prefs.edit(commit = true) { clear() }
     }
 
     private fun encrypt(plaintext: String): String {

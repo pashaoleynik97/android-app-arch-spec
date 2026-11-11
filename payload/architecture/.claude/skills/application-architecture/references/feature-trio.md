@@ -17,8 +17,10 @@ Contents: 1. The three modules · 2. Package layout · 3. Registration · 4. Sea
 | `x-ui` | `{{ROOT_PACKAGE}}.x.ui` | `XFeatureImpl`, screens, ViewModels, contracts, strings, drawables | `:lib-android`, `x-ui-api`, `x` |
 | `x` | `{{ROOT_PACKAGE}}.x.domain` | interactors, models, services, DTOs, stores, its Hilt module | `:lib-common` + the infra it uses |
 
-**MOD-09** — The contract module is an Android library with the library convention only — no Compose
-convention, no Hilt — and exactly one dependency, `api(project(":feature-api"))`. *Why:* a contract that pulls
+**MOD-09** — The contract module is an Android library built with the `{{CONVENTION_PREFIX}}.feature.api`
+convention only (library convention + `api(project(":feature-api"))`, its one dependency) — no Compose
+convention, no Hilt. `x-ui` applies `{{CONVENTION_PREFIX}}.feature.ui`, `x` applies
+`{{CONVENTION_PREFIX}}.feature.domain`; their build files add only the feature's own edges (BUILD-03). *Why:* a contract that pulls
 Compose or Hilt makes every consumer (the host, every sibling that links to it) pay for it.
 <!-- origin: arch-spec MOD-09 -->
 

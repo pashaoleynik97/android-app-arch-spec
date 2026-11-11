@@ -6,7 +6,7 @@ Rules: `specs/80-ci-cd.md` (CI-01 … CI-15). When to offer it: `specs/recommend
 
 | File | Purpose |
 |---|---|
-| `.github/workflows/pr-build.yml` | PR gate: `testDebugUnitTest :app:assembleDebug` + skills lint when present |
+| `.github/workflows/pr-build.yml` | PR gate: `testDebugUnitTest :app:assembleDebug`, `spotlessCheck checkModuleGraph :app:lintDebug` (lint reports uploaded on failure) + skills lint when present |
 | `.github/workflows/publish.yml` | merge → tests → PATCH bump (bot mode `github-app`) → `-test` APKs as a run artifact |
 | `.github/workflows/release-trigger.yml` | manual semver bump with reset → `release/<X.Y.Z>` |
 | `.github/workflows/release.yml` | release branch → release APK → run artifact + GitHub Release `v<X.Y.Z>` |

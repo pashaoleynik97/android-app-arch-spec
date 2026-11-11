@@ -50,7 +50,10 @@ class ClassifyCallTest {
         data class Transient(val cause: Throwable?) : ItemResult
     }
 
-    private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+    }
     private lateinit var server: MockWebServer
     private lateinit var api: ItemsApi
 
@@ -114,8 +117,16 @@ class ClassifyCallTest {
     @Test
     fun `statuses map to their rungs and the 403 carries its wire code`() = runBlocking {
         server.enqueue(MockResponse().setResponseCode(401))
-        server.enqueue(MockResponse().setResponseCode(403).setBody("""{"error":{"error":"ITEM_NOT_ALLOWED","message":"x","details":[]},"timestamp":"t"}"""))
-        server.enqueue(MockResponse().setResponseCode(404).setBody("""{"error":{"error":"ITEM_NOT_FOUND","message":"x","details":[]},"timestamp":"t"}"""))
+        server.enqueue(
+            MockResponse().setResponseCode(
+                403,
+            ).setBody("""{"error":{"error":"ITEM_NOT_ALLOWED","message":"x","details":[]},"timestamp":"t"}"""),
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(
+                404,
+            ).setBody("""{"error":{"error":"ITEM_NOT_FOUND","message":"x","details":[]},"timestamp":"t"}"""),
+        )
         server.enqueue(MockResponse().setResponseCode(500))
 
         assertEquals(ItemResult.SessionExpired, get("a"))
@@ -140,7 +151,10 @@ class ClassifyCallTest {
         val call = async(Dispatchers.IO) {
             classifyCall(
                 dispatcher = Dispatchers.IO,
-                call = { started.complete(Unit); api.item("slow", RefreshPolicy.NeverRefresh) },
+                call = {
+                    started.complete(Unit)
+                    api.item("slow", RefreshPolicy.NeverRefresh)
+                },
                 onFailure = { ItemResult.Transient(it) },
             ) { ItemResult.Success("never") }
         }

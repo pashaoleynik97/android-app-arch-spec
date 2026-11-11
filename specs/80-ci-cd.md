@@ -28,9 +28,11 @@ deliberate, reproducible act with a branch and a tag to return to for a hotfix.
 ## 2. Gates
 
 **CI-02** — Pipelines SHOULD run JVM unit tests as `testDebugUnitTest`, not `test`, and the PR gate SHOULD also
-run `:app:assembleDebug`.
+run `:app:assembleDebug` and the code-quality gates `spotlessCheck checkModuleGraph :app:lintDebug` (BUILD-24..26),
+keeping the lint reports as an artifact when the job fails.
 *Why:* `test` runs every unit test once per build type for no extra signal (twice the time); the assemble
-catches manifest-merge and resource errors that unit tests never compile.
+catches manifest-merge and resource errors that unit tests never compile; formatting, module direction and lint
+are only rules if the merge gate enforces them.
 
 **CI-03** — Instrumented tests SHOULD NOT run on CI by default; they stay few and run locally.
 *Why:* emulators on hosted runners are slow and flaky; the architecture keeps logic in JVM-testable classes

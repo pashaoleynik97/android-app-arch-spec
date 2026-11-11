@@ -57,11 +57,14 @@ fun {{THEME_PREFIX}}Theme(content: @Composable () -> Unit) {
  */
 object {{THEME_PREFIX}}Theme {
     val colors: {{THEME_PREFIX}}Colors
-        @Composable @ReadOnlyComposable get() = Local{{THEME_PREFIX}}Colors.current
+        @Composable @ReadOnlyComposable
+        get() = Local{{THEME_PREFIX}}Colors.current
 
     val typography: {{THEME_PREFIX}}Typography
-        @Composable @ReadOnlyComposable get() = Local{{THEME_PREFIX}}Typography.current
+        @Composable @ReadOnlyComposable
+        get() = Local{{THEME_PREFIX}}Typography.current
 
     val dimens: {{THEME_PREFIX}}Dimens
-        @Composable @ReadOnlyComposable get() = Local{{THEME_PREFIX}}Dimens.current
+        @Composable @ReadOnlyComposable
+        get() = Local{{THEME_PREFIX}}Dimens.current
 }

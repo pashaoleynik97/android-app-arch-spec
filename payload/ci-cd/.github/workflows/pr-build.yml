@@ -34,6 +34,18 @@ jobs:
       - name: Unit tests + debug build
         run: ./gradlew testDebugUnitTest :app:assembleDebug --console=plain
 
+      # Formatting (ktlint), module dependency rules and Android Lint — the conventions configure all three.
+      - name: Format, module graph, lint
+        run: ./gradlew spotlessCheck checkModuleGraph :app:lintDebug --console=plain
+
+      - name: Upload lint reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: "**/build/reports/lint-results-*.*"
+          if-no-files-found: ignore
+
       # The skills and the code must not drift apart. These scripts ship with the ai-layer component; a
       # project without them simply skips the step.
       - name: Skills lint + reference check

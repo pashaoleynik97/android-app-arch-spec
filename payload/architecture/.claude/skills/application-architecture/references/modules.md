@@ -132,11 +132,15 @@ block. *Why:* grouped includes are reviewable; the marker block lets components 
 ## 6. Recipes
 
 **Add an infra module** (no installer component for it): create the module per MOD-22 with the library +
-hilt conventions; put interfaces at the package root, implementations `internal`; `…/di/Qualifiers.kt` and
+hilt conventions (the `feature.*` role conventions are for feature-trio modules only); put interfaces at the package root, implementations `internal`; `…/di/Qualifiers.kt` and
 `…/di/<Name>Module.kt`; a `data class <Name>Config` with no defaults; in `:app`, provide the config from the
 host's environment DI module and add a commented `implementation(project(":<name>"))`; add the module line to
 `CLAUDE.md` and, if it carries rules, a reference file here (via skills-maintenance, capture).
 
 **Check the direction** before adding a dependency: find the two modules in the graph above; the edge must
 point down. If it points up or sideways, use a host seam (feature-trio reference) or move the code to the host
-(MOD-16).
+(MOD-16). Then run `./gradlew checkModuleGraph` (or `:<module>:checkModuleGraph`): the `foundation` conventions
+register it on every module and fail with the rule id (MOD-01, MOD-07, MOD-09, MOD-10, MOD-11, MOD-19). It
+classifies modules by name (MOD-20), so a module that breaks the naming rule is also misjudged — rename it
+rather than working around the check. Never weaken `ModuleGraphRules` in `build-logic` to make a build pass;
+a real exception is an ADR and a reviewed rule change.

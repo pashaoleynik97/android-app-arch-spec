@@ -90,16 +90,18 @@ private fun {{FEATURE_PASCAL}}Content(
         {{FEATURE_PASCAL}}UxState.Loading -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             {{THEME_PREFIX}}Loader(color = {{THEME_PREFIX}}Theme.colors.primary)
         }
-
         {{FEATURE_PASCAL}}UxState.Failure -> {{THEME_PREFIX}}BlockingMessageScreen(
             title = stringResource(R.string.{{FEATURE_PKG}}_failure_title),
             message = stringResource(R.string.{{FEATURE_PKG}}_failure_message),
             actions = listOf(
-                BlockingAction(stringResource(R.string.{{FEATURE_PKG}}_retry), onRetry, icon = {{THEME_PREFIX}}Icons.Refresh),
+                BlockingAction(
+                    stringResource(R.string.{{FEATURE_PKG}}_retry),
+                    onRetry,
+                    icon = {{THEME_PREFIX}}Icons.Refresh,
+                ),
             ),
             modifier = modifier,
         )
-
         is {{FEATURE_PASCAL}}UxState.Content -> Column(
             modifier = modifier
                 .fillMaxSize()

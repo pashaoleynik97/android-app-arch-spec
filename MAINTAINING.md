@@ -42,6 +42,19 @@ Each scenario starts from a fresh copy of `tests/fixtures/empty-activity/`:
 | everything | Core + every Recommended component, non-default answers | same + `assembleRelease` |
 | evolve | on "backend app": amend a rule, rename a module and audit, upgrade from a bumped spec with a project override | override survives; audit flags stale refs |
 
+`startup`, `backend app`, `everything` (default answers) and `long-names` (every component with long install answers
+and a long-named scaffolded feature, so a template line near the ktlint length limit fails here and not in a user's
+project) are scripted: `tests/smoke/install-smoke.sh startup|backend-app|everything|long-names [--keep DIR]` renders
+the scenario with every other question skipped, runs each component's `gate:` right after installing it, then `assembleDebug testDebugUnitTest`
+(`everything` adds `assembleRelease`), `spotlessCheck checkModuleGraph :app:lintDebug` with configuration-cache
+problems as errors, `no-placeholders-left` and `skills-lint`. The `everything` run with **non-default** answers stays
+a manual agent run. CI (`.github/workflows/spec-ci.yml`)
+runs `--self-check`, the English-only leak check and `skills-lint` plus the `startup` smoke on every PR and push to
+`main`; `backend app` and `long-names` run on manual dispatch. `evolve` stays a manual agent run. The script covers the
+renderer only: a scenario that needs an agent step to go green fails at that component's gate, and the fix is to
+document the step in `installer/components/<id>.md` or move it into `render.py`.
+
+By hand (any scenario):
 ```
 T=$(mktemp -d)/proj && cp -R tests/fixtures/empty-activity "$T" && (cd "$T" && git init -q)
 mkdir -p "$T/.arch-spec" && rsync -a --exclude .git --exclude .idea --exclude tests/fixtures ./ "$T/.arch-spec/spec/"

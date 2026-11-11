@@ -45,6 +45,11 @@ as `<file>.arch-spec-new`; compare, merge, delete the `.arch-spec-new` file.
 
 The build must be green **before** you change anything; the template compiles and its tests pass.
 
+The three build files apply one role convention each (`{{CONVENTION_PREFIX}}.feature.api` / `.feature.ui` /
+`.feature.domain`), which already brings the kernel modules, navigation, Hilt and `:core-testing`. Add only this
+feature's own edges (e.g. `implementation(project(":network"))` in the domain module); never re-add what the
+convention provides (BUILD-03, BUILD-04).
+
 ## 3. Wire it into the host
 
 - **Registration** is already added. Each host dependency line in `app/build.gradle.kts` gets a short

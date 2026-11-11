@@ -46,7 +46,11 @@ components:
     parameters: [PROJECT_SLUG, APPLICATION_ID, APP_PACKAGE, ROOT_PACKAGE, CONVENTION_PREFIX, MIN_SDK, TARGET_SDK, COMPILE_SDK, JVM_TARGET, KEYSTORE_FILE]
     gate:
       - ./gradlew help
-      - ./gradlew :app:assembleDebug
+      - ./gradlew :build-logic:convention:test
+      - ./gradlew :app:assembleDebug checkModuleGraph
+      # No spotlessCheck / lint here: the stock Android Studio sources are not ktlint-formatted, and with a non-stock
+      # APP_PACKAGE the manifest's `.MainActivity` points at a class architecture has not written yet (lint
+      # MissingClass). architecture, installed next, replaces those sources and its gate runs both.
     skill_refs: [application-architecture/references/build-system.md, application-architecture/references/toolchain.md]
     inserts:
       - file: .claude/skills/application-architecture/SKILL.md
@@ -81,8 +85,9 @@ components:
     app_dependencies: ['implementation(project(":lib-common"))', 'implementation(project(":lib-android"))', 'implementation(project(":feature-api"))']
     parameters: [APP_NAME, ROOT_PACKAGE, APP_PACKAGE, THEME_PREFIX, BASE_LOCALE, EXTRA_LOCALES, COLOR_PRIMARY, COLOR_ERROR, COLOR_SUCCESS, COLOR_WARNING, FONT_FAMILY, REFERENCE_DEVICE_DP, THEME_MODE, FIGMA_URL]
     gate:
-      - ./gradlew assembleDebug
+      - ./gradlew assembleDebug checkModuleGraph
       - ./gradlew testDebugUnitTest
+      - ./gradlew spotlessCheck :app:lintDebug
     skill_refs: [application-architecture/references/modules.md, application-architecture/references/kernel.md, application-architecture/references/presentation.md, application-architecture/references/di.md, application-architecture/references/feature-trio.md, application-architecture/references/testing.md, compose-ui/references/tokens.md, compose-ui/references/uikit.md, compose-ui/references/host-chrome.md, compose-ui/references/screen-layout.md, application-architecture/references/data-and-errors.md]
     inserts:
       - file: .claude/skills/application-architecture/SKILL.md

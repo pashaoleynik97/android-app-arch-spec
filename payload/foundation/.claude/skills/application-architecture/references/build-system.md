@@ -4,7 +4,7 @@ Rules for every Gradle file. Spec: `.arch-spec/spec/specs/20-build-system.md`. C
 (BUILD-10) is a golden rule in `SKILL.md`; version-conditional gotchas are in the toolchain reference.
 
 Contents: 1. Layout · 2. Convention plugins · 3. Catalog · 4. Root files · 5. Test defaults ·
-6. Versioning · 7. Signing · 8. Release optimization · 9. Recipes
+6. Versioning · 7. Signing · 8. Release optimization, module graph check, lint and formatting · 9. Recipes
 
 ---
 
@@ -43,12 +43,18 @@ real plugin versions so the two never disagree at runtime.
 | `{{CONVENTION_PREFIX}}.android.library` | AndroidLibraryConventionPlugin | `com.android.library`, SDK + Java levels, test defaults |
 | `{{CONVENTION_PREFIX}}.android.library.compose` | AndroidLibraryComposeConventionPlugin | Compose compiler, BOM + core Compose deps |
 | `{{CONVENTION_PREFIX}}.android.hilt` | AndroidHiltConventionPlugin | KSP + Hilt plugin, hilt-android, hilt-compiler, errorprone annotations |
+| `{{CONVENTION_PREFIX}}.feature.api` | AndroidFeatureApiConventionPlugin | `.android.library` + `api(:feature-api)` — a feature contract `:x-ui-api` |
+| `{{CONVENTION_PREFIX}}.feature.ui` | AndroidFeatureUiConventionPlugin | `.android.library` + `.library.compose` + `.hilt`, `:lib-android`, navigation-compose, hilt-lifecycle-viewmodel-compose, test `:core-testing` |
+| `{{CONVENTION_PREFIX}}.feature.domain` | AndroidFeatureDomainConventionPlugin | `.android.library` + `.hilt`, `:lib-common`, javax.inject, test `:core-testing` |
 
 Shared helpers live in `KotlinAndroid.kt` (SDK, Java, unit-test defaults) and `AndroidCompose.kt`.
 
 **BUILD-03** — The build ships exactly the conventions in the table above; more are added only through the
-recipe in section 9. *Why:* the host is a Compose module too — without an application-compose convention it
-re-declares the BOM and Compose deps by hand and drifts from the libraries.
+recipe in section 9. Feature-trio modules apply their role convention (`feature.api` / `feature.ui` /
+`feature.domain`) alone; other modules combine the platform ones. *Why:* the host is a Compose module too —
+without an application-compose convention it re-declares the BOM and Compose deps by hand and drifts from the
+libraries; without role conventions every feature copies the same plugin set and baseline edges, and a change to
+them means editing every feature.
 <!-- origin: arch-spec BUILD-03 -->
 
 **BUILD-04** — A module build file is declarative: plugin aliases, `android { namespace = "…" }`,
@@ -59,13 +65,13 @@ a classic runtime NoSuchMethodError.
 
 ```kotlin
 plugins {
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.library)
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.library.compose)   // after .library
-    alias(libs.plugins.{{CONVENTION_PREFIX}}.android.hilt)
+    alias(libs.plugins.{{CONVENTION_PREFIX}}.feature.ui)   // brings library + compose + hilt + :lib-android + nav
 }
 android { namespace = "{{ROOT_PACKAGE}}.orders.ui" }
-dependencies { implementation(project(":lib-android")) }
+dependencies { implementation(project(":orders-ui-api")); implementation(project(":orders")) }
 ```
+A non-feature module lists platform conventions instead: `.android.library`, then `.android.library.compose`,
+then `.android.hilt`.
 
 **BUILD-05** — A `.compose` convention is listed after its base `.android.library` / `.android.application`
 convention; applied alone it fails fast with a clear message. *Why:* it configures the extension the base
@@ -180,6 +186,33 @@ module (MOD-15). A project that adds flavors moves those values into the flavor 
 injection point. *Why:* flavors multiply every task and CI minute; one injection point keeps the switch local.
 <!-- origin: arch-spec BUILD-23 -->
 
+### Module graph check
+
+**BUILD-24** — Every module gets `checkModuleGraph` from the library / application convention, hooked into
+`check`: it fails on a project edge that breaks the module rules (MOD-01, MOD-07, MOD-09, MOD-10, MOD-11,
+MOD-19) and names the rule. The rules are the pure `ModuleGraphRules` object, unit-tested with
+`./gradlew :build-logic:convention:test`; the task only collects edges as strings at configuration time
+(BUILD-14). *Why:* dependency direction is the load-bearing rule; a red build cannot be ignored, prose can.
+<!-- origin: arch-spec BUILD-24 -->
+
+### Lint and formatting
+
+**BUILD-25** — Android Lint is configured by the conventions: `abortOnError`, XML + SARIF reports, and only
+time-dependent checks disabled (`GradleDependency`, `NewerVersionAvailable`, `AndroidGradlePluginVersion`) plus
+`OldTargetApi` (BUILD-35). Run it as `./gradlew :app:lintDebug` — the host checks every module
+(`checkDependencies`). `app/lint-baseline.xml` was rendered empty: fix a finding, or suppress the one line with
+`@SuppressLint` / `tools:ignore` and a comment saying why; never add it to the baseline. Extra Compose rules are
+opt-in: `lintChecks(libs.compose.lints)` in the compose conventions. *Why:* a baseline that absorbs new
+findings switches lint off silently; a finding that depends on the date trains everyone to ignore red.
+<!-- origin: arch-spec BUILD-25 -->
+
+**BUILD-26** — ktlint, through Spotless, formats `src/**/*.kt` and module `*.gradle.kts` by the root
+`.editorconfig` (also read by the IDE): `./gradlew spotlessApply` fixes, `spotlessCheck` (part of `check`)
+verifies. `.editorconfig` disables only import ordering and signature joining, which cannot hold for code
+generated with install-time names. A ktlint upgrade is its own change plus one `spotlessApply`. *Why:* style
+stops drifting between sessions and review diffs stay about behaviour.
+<!-- origin: arch-spec BUILD-26 -->
+
 ## 9. Recipes
 
 **Add a library**: add the version under the right `[versions]` header (with a pin reason if pinned), the
@@ -188,8 +221,14 @@ it — never in a module that does not (MOD-02).
 
 **Add a convention**: write `Android<Thing>ConventionPlugin` (default package, helpers as internal
 extensions), register it in `build-logic/convention/build.gradle.kts`, add the catalog marker
-`{{CONVENTION_PREFIX}}-android-<thing> = { id = "{{CONVENTION_PREFIX}}.android.<thing>", version = "unspecified" }`,
-update the table in section 2 and this skill's changelog.
+`{{CONVENTION_PREFIX}}-android-<thing> = { id = "{{CONVENTION_PREFIX}}.android.<thing>", version = "unspecified" }`
+(a module-role convention uses `.feature.<role>` / `-feature-<role>`), update the table in section 2 and this
+skill's changelog. Never remove or repurpose an id: older build files still apply it (BUILD-09).
 
-**Verify a build change**: `./gradlew help` (configuration), then `./gradlew assembleDebug testDebugUnitTest`;
+**Change what every feature module gets** (a test dependency for all UI modules, a new baseline edge): edit the
+`feature.*` convention, not the feature build files.
+
+**Verify a build change**: `./gradlew help` (configuration), then
+`./gradlew spotlessApply` and `./gradlew assembleDebug testDebugUnitTest spotlessCheck checkModuleGraph :app:lintDebug` (plus `:build-logic:convention:test` after editing
+`build-logic`);
 run it twice — the second run must reuse the configuration cache.

@@ -176,7 +176,6 @@ private fun ButtonContent(
             }
             label(Modifier)
         }
-
         {{THEME_PREFIX}}ButtonContentLayout.IconStart -> Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -196,12 +195,34 @@ private fun ButtonPreview() = {{THEME_PREFIX}}Theme {
         verticalArrangement = Arrangement.spacedBy({{THEME_PREFIX}}Theme.dimens.spaceSmall),
     ) {
         {{THEME_PREFIX}}Button("Continue", onClick = {}, modifier = Modifier.fillMaxWidth())
-        {{THEME_PREFIX}}Button("Secondary", onClick = {}, variant = {{THEME_PREFIX}}ButtonVariant.Secondary, modifier = Modifier.fillMaxWidth())
-        {{THEME_PREFIX}}Button("Delete", onClick = {}, variant = {{THEME_PREFIX}}ButtonVariant.Negative, modifier = Modifier.fillMaxWidth())
-        {{THEME_PREFIX}}Button("Back", onClick = {}, variant = {{THEME_PREFIX}}ButtonVariant.Outline, icon = {{THEME_PREFIX}}Icons.ArrowBack, contentLayout = {{THEME_PREFIX}}ButtonContentLayout.IconStart, modifier = Modifier.fillMaxWidth())
+        {{THEME_PREFIX}}Button(
+            "Secondary",
+            onClick = {},
+            variant = {{THEME_PREFIX}}ButtonVariant.Secondary,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        {{THEME_PREFIX}}Button(
+            "Delete",
+            onClick = {},
+            variant = {{THEME_PREFIX}}ButtonVariant.Negative,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        {{THEME_PREFIX}}Button(
+            "Back",
+            onClick = {},
+            variant = {{THEME_PREFIX}}ButtonVariant.Outline,
+            icon = {{THEME_PREFIX}}Icons.ArrowBack,
+            contentLayout = {{THEME_PREFIX}}ButtonContentLayout.IconStart,
+            modifier = Modifier.fillMaxWidth(),
+        )
         {{THEME_PREFIX}}Button("Saving", onClick = {}, loading = true, modifier = Modifier.fillMaxWidth())
         {{THEME_PREFIX}}ButtonRow {
-            {{THEME_PREFIX}}Button("Cancel", onClick = {}, variant = {{THEME_PREFIX}}ButtonVariant.Secondary, modifier = Modifier.weight(1f))
+            {{THEME_PREFIX}}Button(
+                "Cancel",
+                onClick = {},
+                variant = {{THEME_PREFIX}}ButtonVariant.Secondary,
+                modifier = Modifier.weight(1f),
+            )
             {{THEME_PREFIX}}Button("A considerably longer label", onClick = {}, modifier = Modifier.weight(1f))
         }
     }
